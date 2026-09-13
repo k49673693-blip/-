@@ -40,7 +40,7 @@
           <button type="button" id="add-step-btn" class="btn-secondary">+ 手順を追加</button>
         </div>
 
-        <!-- JPG/PNG画像ファイル直接アップロード -->
+        <!-- 画像ファイルアップロード -->
         <div class="field-container">
           <label for="image-file"><strong>レシピ画像 (JPG / PNGなど)</strong></label>
           <input type="file" id="image-file" accept="image/jpeg,image/png,image/webp">
@@ -94,7 +94,7 @@
   <div id="recipe-modal" class="fullscreen-modal">
     <div class="fullscreen-modal-content">
       <button class="fullscreen-close-btn" id="modal-close" type="button">&times; 閉じる</button>
-      <div class="fullscreen-hero">
+      <div class="fullscreen-hero" id="modal-hero-container">
         <img id="modal-image" src="" alt="レシピ画像">
         <div class="fullscreen-hero-text">
           <span id="modal-category" class="badge"></span>
