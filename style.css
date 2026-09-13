@@ -83,12 +83,13 @@ input[type="text"], select, textarea {
 .btn-secondary {
   background-color: #e2e8f0;
   color: #333;
-  border: none;
-  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
   align-self: flex-start;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: bold;
 }
 .btn-secondary:hover {
   background-color: #cbd5e1;
@@ -161,24 +162,27 @@ button[type="submit"] {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 5px;
+  margin-top: 8px;
 }
 
 .ingredient-tag {
-  background-color: #e2e8f0;
-  color: #1e293b;
-  padding: 4px 10px;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  padding: 6px 12px;
   border-radius: 16px;
-  font-size: 0.85rem;
-  display: flex;
+  font-size: 0.9rem;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .ingredient-tag .remove-tag {
   cursor: pointer;
   font-weight: bold;
-  color: #64748b;
+  color: #1e40af;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 .ingredient-tag .remove-tag:hover {
   color: #ef4444;
@@ -295,9 +299,8 @@ button[type="submit"] {
 .fullscreen-hero {
   position: relative;
   width: 100%;
-  max-height: 400px;
-  overflow: hidden;
-  background: #222;
+  min-height: 120px;
+  background: #333;
 }
 
 .fullscreen-hero img {
@@ -305,6 +308,7 @@ button[type="submit"] {
   height: 350px;
   object-fit: cover;
   opacity: 0.9;
+  display: block;
 }
 
 .fullscreen-hero-text {
@@ -336,10 +340,11 @@ button[type="submit"] {
   font-size: 1.3rem;
 }
 
+/* 材料一覧 */
 .modal-ingredients-list {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 12px;
 }
 
@@ -350,17 +355,20 @@ button[type="submit"] {
   font-size: 1.05rem;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
 .modal-ingredients-list li .ing-name {
   font-weight: bold;
+  color: #1e293b;
 }
 
 .modal-ingredients-list li .ing-amount {
-  color: #64748b;
+  color: #475569;
+  font-weight: 500;
 }
 
-/* 手順文字の拡大設定 */
+/* 手順文字サイズ調整 */
 .modal-steps-list {
   padding-left: 25px;
 }
@@ -368,7 +376,7 @@ button[type="submit"] {
 .modal-steps-list li {
   margin-bottom: 16px;
   line-height: 1.8;
-  font-size: 1.15rem; /* 文字サイズを大きく設定 */
+  font-size: 1.15rem;
   color: #222;
 }
 
