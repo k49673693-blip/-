@@ -2,131 +2,136 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: sans-serif;
 }
 
 body {
-  background-color: #f7f9fa;
+  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', sans-serif;
+  background-color: #f8f9fa;
   color: #333;
-  padding: 20px;
+  line-height: 1.6;
 }
 
 .container {
   max-width: 900px;
   margin: 0 auto;
+  padding: 20px;
 }
 
 h1 {
   text-align: center;
   margin-bottom: 20px;
+  color: #d9534f;
 }
 
 section {
   background: #fff;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  margin-bottom: 25px;
 }
 
-form, .search-controls {
+h2 {
+  font-size: 1.25rem;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 8px;
+}
+
+/* フォーム構造 */
+form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 15px;
 }
 
-input, select, textarea, button {
+input[type="text"], select, textarea {
+  width: 100%;
   padding: 10px;
   border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 0.95rem;
 }
 
-button {
-  background-color: #ff8c00;
-  color: white;
-  border: none;
+.field-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dynamic-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.step-number {
   font-weight: bold;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #e07b00;
+  color: #d9534f;
+  min-width: 45px;
 }
 
 .btn-secondary {
-  background-color: #4b5563;
-  padding: 6px 12px;
-  font-size: 12px;
-}
-.btn-secondary:hover {
-  background-color: #374151;
+  background-color: #e2e8f0;
+  color: #333;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  align-self: flex-start;
+  font-size: 0.85rem;
 }
 
 .btn-danger-sm {
-  background-color: #ef4444;
-  padding: 4px 8px;
-  font-size: 12px;
-  width: fit-content;
-}
-
-/* 食材入力エリア */
-.ingredients-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: #fafafa;
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid #eee;
-}
-
-.ingredient-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.ingredient-row input[type="text"] {
-  flex: 1;
-}
-
-.remove-ing-btn {
-  background: #ef4444;
-  color: white;
+  background-color: #ff4d4f;
+  color: #fff;
   border: none;
   padding: 6px 10px;
   border-radius: 4px;
   cursor: pointer;
-}
-
-/* 画像ファイル入力＆プレビュー */
-.image-input-container {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: #fafafa;
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid #eee;
+  font-size: 0.8rem;
 }
 
 .image-preview-container {
+  margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 15px;
 }
 
 .image-preview-container img {
-  width: 80px;
-  height: 80px;
+  max-width: 150px;
+  max-height: 150px;
   object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+  border-radius: 8px;
+  border: 1px solid #ddd;
 }
 
-/* カード一覧 */
+.form-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+button[type="submit"] {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  flex: 1;
+}
+
+/* 検索コントロール */
+.search-controls {
+  display: flex;
+  gap: 10px;
+}
+
+/* レシピカードグリッド */
 .recipe-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -134,33 +139,32 @@ button:hover {
 }
 
 .recipe-card {
-  border: 1px solid #eee;
-  border-radius: 8px;
-  overflow: hidden;
   background: #fff;
-  display: flex;
-  flex-direction: column;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
 }
 
 .recipe-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 
-.recipe-card img {
+.card-img {
   width: 100%;
-  height: 150px;
+  height: 160px;
   object-fit: cover;
   background-color: #eee;
 }
 
-.recipe-card-content {
+.card-content {
   padding: 15px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
   flex-grow: 1;
 }
 
@@ -168,97 +172,142 @@ button:hover {
   display: inline-block;
   background: #e0f2fe;
   color: #0369a1;
+  font-size: 0.75rem;
   padding: 2px 8px;
   border-radius: 12px;
-  font-size: 12px;
+  margin-bottom: 6px;
   width: fit-content;
 }
 
+.card-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
 .card-actions {
-  display: flex;
-  gap: 8px;
   margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
   padding-top: 10px;
 }
 
-.edit-btn {
-  background-color: #3b82f6;
-  flex: 1;
-}
-.delete-btn {
-  background-color: #ef4444;
-  flex: 1;
-}
-
-/* 拡大表示モーダル */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.6);
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.modal-content {
-  background-color: #fff;
-  border-radius: 8px;
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
-}
-
-.close-btn {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 28px;
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 0 0 4px rgba(0,0,0,0.8);
+.btn-edit, .btn-delete {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
 }
 
-.modal-content img {
-  width: 100%;
-  max-height: 300px;
-  object-fit: cover;
+.btn-edit { background: #ffc107; color: #000; }
+.btn-delete { background: #dc3545; color: #fff; }
+
+/* 全画面モーダル表示 */
+.fullscreen-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+  overflow-y: auto;
 }
 
-.modal-body {
-  padding: 20px;
+.fullscreen-modal-content {
+  background: #fff;
+  min-height: 100vh;
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.fullscreen-close-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  z-index: 1010;
+}
+
+.fullscreen-hero {
+  position: relative;
+  width: 100%;
+  max-height: 400px;
+  overflow: hidden;
+  background: #222;
+}
+
+.fullscreen-hero img {
+  width: 100%;
+  height: 350px;
+  object-fit: cover;
+  opacity: 0.9;
+}
+
+.fullscreen-hero-text {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.fullscreen-hero-text h1 {
+  text-align: left;
+  color: white;
+  font-size: 2rem;
+}
+
+.fullscreen-body {
+  padding: 30px 20px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 25px;
+}
+
+.fullscreen-section h3 {
+  border-left: 4px solid #d9534f;
+  padding-left: 10px;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
 }
 
 .modal-ingredients-list {
-  list-style-type: none;
-  background: #f9fafb;
-  padding: 10px;
-  border-radius: 6px;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
 }
 
 .modal-ingredients-list li {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px dashed #ddd;
+  background: #f1f5f9;
+  padding: 8px 12px;
+  border-radius: 6px;
 }
 
-.modal-ingredients-list li:last-child {
-  border-bottom: none;
+.modal-steps-list {
+  padding-left: 20px;
 }
 
-.modal-instructions-text {
-  white-space: pre-wrap;
-  line-height: 1.6;
+.modal-steps-list li {
+  margin-bottom: 10px;
+  line-height: 1.7;
+}
+
+.modal-memo-text {
+  background: #fffbe6;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #ffe58f;
 }
