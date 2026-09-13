@@ -36,7 +36,16 @@
           <button type="button" id="add-ingredient-btn" class="btn-secondary">+ 食材を追加</button>
         </div>
 
-        <input type="url" id="image-url" placeholder="画像URL (任意)">
+        <!-- 画像ファイル入力＆プレビューエリア -->
+        <div class="image-input-container">
+          <label for="image-file"><strong>レシピ画像</strong></label>
+          <input type="file" id="image-file" accept="image/*">
+          <div id="image-preview-container" class="image-preview-container" style="display: none;">
+            <img id="image-preview" src="" alt="プレビュー">
+            <button type="button" id="remove-image-btn" class="btn-danger-sm">画像を削除</button>
+          </div>
+        </div>
+
         <textarea id="instructions" placeholder="作り方・メモ" rows="4"></textarea>
 
         <div class="form-buttons">
