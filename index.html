@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>マイ レシピノート</title>
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#d9534f">
 </head>
 <body>
   <div class="container">
@@ -23,10 +25,12 @@
           <option value="和食">和食</option>
           <option value="洋食">洋食</option>
           <option value="中華">中華</option>
+          <option value="パン">パン</option>
+          <option value="お菓子">お菓子</option>
           <option value="その他">その他</option>
         </select>
 
-        <!-- 食材入力エリア (食材名と分量を分離) -->
+        <!-- 食材入力エリア -->
         <div class="field-container">
           <label><strong>食材リスト</strong></label>
           <div id="ingredients-list"></div>
@@ -69,6 +73,8 @@
           <option value="和食">和食</option>
           <option value="洋食">洋食</option>
           <option value="中華">中華</option>
+          <option value="パン">パン</option>
+          <option value="お菓子">お菓子</option>
           <option value="その他">その他</option>
         </select>
       </div>
