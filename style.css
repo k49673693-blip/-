@@ -38,7 +38,6 @@ h2 {
   padding-bottom: 8px;
 }
 
-/* フォーム構造 */
 form {
   display: flex;
   flex-direction: column;
@@ -69,7 +68,8 @@ input[type="text"], select, textarea {
 .step-number {
   font-weight: bold;
   color: #d9534f;
-  min-width: 45px;
+  min-width: 60px;
+  font-size: 0.9rem;
 }
 
 .btn-secondary {
@@ -82,6 +82,9 @@ input[type="text"], select, textarea {
   align-self: flex-start;
   font-size: 0.85rem;
 }
+.btn-secondary:hover {
+  background-color: #cbd5e1;
+}
 
 .btn-danger-sm {
   background-color: #ff4d4f;
@@ -91,6 +94,7 @@ input[type="text"], select, textarea {
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .image-preview-container {
@@ -125,13 +129,11 @@ button[type="submit"] {
   flex: 1;
 }
 
-/* 検索コントロール */
 .search-controls {
   display: flex;
   gap: 10px;
 }
 
-/* レシピカードグリッド */
 .recipe-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -204,7 +206,6 @@ button[type="submit"] {
 .btn-edit { background: #ffc107; color: #000; }
 .btn-delete { background: #dc3545; color: #fff; }
 
-/* 全画面モーダル表示 */
 .fullscreen-modal {
   display: none;
   position: fixed;
