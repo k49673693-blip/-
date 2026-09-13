@@ -29,22 +29,18 @@
         <!-- 食材入力エリア -->
         <div class="field-container">
           <label><strong>食材リスト</strong></label>
-          <div id="ingredients-list">
-            <!-- JavaScriptで動的追加 -->
-          </div>
+          <div id="ingredients-list"></div>
           <button type="button" id="add-ingredient-btn" class="btn-secondary">+ 食材を追加</button>
         </div>
 
-        <!-- 作り方（手順番号あらかじめ表示）エリア -->
+        <!-- 作り方（手順番号）エリア -->
         <div class="field-container">
           <label><strong>作り方の手順</strong></label>
-          <div id="steps-list">
-            <!-- JavaScriptで動的追加 -->
-          </div>
+          <div id="steps-list"></div>
           <button type="button" id="add-step-btn" class="btn-secondary">+ 手順を追加</button>
         </div>
 
-        <!-- JPG画像ファイル直接アップロード -->
+        <!-- JPG/PNG画像ファイル直接アップロード -->
         <div class="field-container">
           <label for="image-file"><strong>レシピ画像 (JPG / PNGなど)</strong></label>
           <input type="file" id="image-file" accept="image/jpeg,image/png,image/webp">
@@ -87,7 +83,7 @@
   <!-- レシピ全画面表示モーダル -->
   <div id="recipe-modal" class="fullscreen-modal">
     <div class="fullscreen-modal-content">
-      <button class="fullscreen-close-btn" id="modal-close">&times; 閉じる</button>
+      <button class="fullscreen-close-btn" id="modal-close" type="button">&times; 閉じる</button>
       <div class="fullscreen-hero">
         <img id="modal-image" src="" alt="レシピ画像">
         <div class="fullscreen-hero-text">
