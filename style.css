@@ -65,6 +65,14 @@ input[type="text"], select, textarea {
   margin-bottom: 8px;
 }
 
+.ingredient-name-input {
+  flex: 2;
+}
+
+.ingredient-amount-input {
+  flex: 1;
+}
+
 .step-number {
   font-weight: bold;
   color: #d9534f;
@@ -129,11 +137,54 @@ button[type="submit"] {
   flex: 1;
 }
 
+/* 検索エリアスタイル */
 .search-controls {
   display: flex;
   gap: 10px;
 }
 
+.ingredient-search-container {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ingredient-search-input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.ingredient-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.ingredient-tag {
+  background-color: #e2e8f0;
+  color: #1e293b;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ingredient-tag .remove-tag {
+  cursor: pointer;
+  font-weight: bold;
+  color: #64748b;
+}
+.ingredient-tag .remove-tag:hover {
+  color: #ef4444;
+}
+
+/* 一覧カード */
 .recipe-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -206,6 +257,7 @@ button[type="submit"] {
 .btn-edit { background: #ffc107; color: #000; }
 .btn-delete { background: #dc3545; color: #fff; }
 
+/* 全画面モーダルスタイル */
 .fullscreen-modal {
   display: none;
   position: fixed;
@@ -274,41 +326,63 @@ button[type="submit"] {
   padding: 30px 20px;
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap: 30px;
 }
 
 .fullscreen-section h3 {
   border-left: 4px solid #d9534f;
   padding-left: 10px;
-  margin-bottom: 12px;
-  font-size: 1.2rem;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
 }
 
 .modal-ingredients-list {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
 }
 
 .modal-ingredients-list li {
   background: #f1f5f9;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: 6px;
+  font-size: 1.05rem;
+  display: flex;
+  justify-content: space-between;
 }
 
+.modal-ingredients-list li .ing-name {
+  font-weight: bold;
+}
+
+.modal-ingredients-list li .ing-amount {
+  color: #64748b;
+}
+
+/* 手順文字の拡大設定 */
 .modal-steps-list {
-  padding-left: 20px;
+  padding-left: 25px;
 }
 
 .modal-steps-list li {
-  margin-bottom: 10px;
-  line-height: 1.7;
+  margin-bottom: 16px;
+  line-height: 1.8;
+  font-size: 1.15rem; /* 文字サイズを大きく設定 */
+  color: #222;
+}
+
+.modal-steps-list li::marker {
+  font-weight: bold;
+  color: #d9534f;
+  font-size: 1.2rem;
 }
 
 .modal-memo-text {
   background: #fffbe6;
-  padding: 12px;
+  padding: 14px;
   border-radius: 6px;
   border: 1px solid #ffe58f;
+  font-size: 1.05rem;
+  line-height: 1.7;
 }
