@@ -340,7 +340,6 @@ button[type="submit"] {
   font-size: 1.3rem;
 }
 
-/* 材料一覧 */
 .modal-ingredients-list {
   list-style: none;
   display: grid;
@@ -368,7 +367,6 @@ button[type="submit"] {
   font-weight: 500;
 }
 
-/* 手順文字サイズ調整 */
 .modal-steps-list {
   padding-left: 25px;
 }
