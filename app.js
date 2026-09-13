@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let currentImageData = '';
-  let searchIngredientTags = []; // 検索用食材タグのリスト
+  let searchIngredientTags = []; // 検索用食材タグリスト
 
   // DOM要素取得
   const recipeForm = document.getElementById('recipe-form');
@@ -47,10 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalMemo = document.getElementById('modal-memo');
   const modalMemoContainer = document.getElementById('modal-memo-container');
 
-  // 食材行（名前・分量に分離）の追加
+  // 食材行追加
   function addIngredientRow(name = '', amount = '') {
     const div = document.createElement('div');
-    div.className = 'dynamic-row';
+    div.className = 'dynamic-row ingredient-row';
     div.innerHTML = `
       <input type="text" class="ingredient-name-input" placeholder="食材名 (例: 人参)" value="${name}">
       <input type="text" class="ingredient-amount-input" placeholder="分量 (例: 1本)" value="${amount}">
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ingredientsList.appendChild(div);
   }
 
-  // 手順番号の自動計算
+  // 手順番号更新
   function updateStepNumbers() {
     const stepRows = stepsList.querySelectorAll('.step-row');
     stepRows.forEach((row, index) => {
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 作り方（手順）行の追加
+  // 作り方行追加
   function addStepRow(value = '') {
     const div = document.createElement('div');
     div.className = 'dynamic-row step-row';
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addStepRow();
   });
 
-  // 画像アップロード処理
+  // 画像ファイル読込
   imageFileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -130,8 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = titleInput.value.trim();
     const category = categoryInput.value;
 
-    // 食材入力データ取得 ({ name, amount })
-    const ingredientRows = ingredientsList.querySelectorAll('.dynamic-row');
+    const ingredientRows = ingredientsList.querySelectorAll('.ingredient-row');
     const ingredients = [];
     ingredientRows.forEach(row => {
       const name = row.querySelector('.ingredient-name-input').value.trim();
@@ -167,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       localStorage.setItem('recipes', JSON.stringify(recipes));
     } catch (err) {
-      alert('画像サイズが大きすぎます。もう少し小さめの写真を選択してください。');
+      alert('画像サイズが大きすぎます。小さめの画像を選択してください。');
       return;
     }
 
@@ -197,14 +196,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   cancelBtn.addEventListener('click', resetForm);
 
-  // 食材検索用タグの追加・描画処理
+  // 食材絞り込みタグの追加・描画
   function addIngredientFilterTag() {
     const val = ingredientSearchInput.value.trim();
-    if (val !== '' && !searchIngredientTags.includes(val)) {
-      searchIngredientTags.push(val);
+    if (val !== '') {
+      if (!searchIngredientTags.includes(val)) {
+        searchIngredientTags.push(val);
+        renderIngredientTags();
+        renderRecipes();
+      }
       ingredientSearchInput.value = '';
-      renderIngredientTags();
-      renderRecipes();
     }
   }
 
@@ -214,8 +215,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const tagEl = document.createElement('span');
       tagEl.className = 'ingredient-tag';
       tagEl.innerHTML = `
-        ${tag}
-        <span class="remove-tag">&times;</span>
+        <span>${tag}</span>
+        <span class="remove-tag" title="削除">&times;</span>
       `;
       tagEl.querySelector('.remove-tag').addEventListener('click', () => {
         searchIngredientTags = searchIngredientTags.filter(t => t !== tag);
@@ -226,15 +227,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  addIngredientFilterBtn.addEventListener('click', addIngredientFilterTag);
-  ingredientSearchInput.addEventListener('keypress', (e) => {
+  addIngredientFilterBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    addIngredientFilterTag();
+  });
+
+  ingredientSearchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       addIngredientFilterTag();
     }
   });
 
-  // レシピ描画 & 絞り込み
+  // 一覧描画 & 絞り込み実行
   function renderRecipes() {
     recipeListContainer.innerHTML = '';
 
@@ -242,15 +247,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedCategory = filterCategory.value;
 
     const filtered = recipes.filter(r => {
-      // 1. 料理名キーワード検索
       const matchesKeyword = r.title.toLowerCase().includes(keyword);
-
-      // 2. ジャンル絞り込み
       const matchesCategory = selectedCategory === 'all' || r.category === selectedCategory;
 
-      // 3. 複数食材タグでのAND絞り込み（指定された食材タグがすべてレシピに含まれているか）
       const matchesIngredients = searchIngredientTags.every(tag => {
         const tagLower = tag.toLowerCase();
+        if (!r.ingredients) return false;
         return r.ingredients.some(ing => {
           if (typeof ing === 'string') {
             return ing.toLowerCase().includes(tagLower);
@@ -265,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (filtered.length === 0) {
-      recipeListContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #777;">該当するレシピが見つかりません</p>';
+      recipeListContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #777; padding: 20px;">条件に当てはまるレシピが見つかりません</p>';
       return;
     }
 
@@ -312,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 編集データのロード
+  // 編集ロード
   function loadRecipeToForm(recipe) {
     recipeIdInput.value = recipe.id;
     titleInput.value = recipe.title;
@@ -358,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
   searchKeyword.addEventListener('input', renderRecipes);
   filterCategory.addEventListener('change', renderRecipes);
 
-  // 全画面モーダル表示
+  // モーダル表示制御
   function openModal(recipe) {
     modalTitle.textContent = recipe.title;
     modalCategory.textContent = recipe.category;
@@ -367,27 +369,26 @@ document.addEventListener('DOMContentLoaded', () => {
       modalImage.src = recipe.image;
       modalImage.style.display = 'block';
     } else {
+      modalImage.removeAttribute('src');
       modalImage.style.display = 'none';
     }
 
-    // 食材表示の成形
     modalIngredients.innerHTML = '';
     if (recipe.ingredients && recipe.ingredients.length > 0) {
       recipe.ingredients.forEach(ing => {
         const li = document.createElement('li');
         if (typeof ing === 'string') {
-          li.innerHTML = `<span class="ing-name">${ing}</span>`;
+          li.innerHTML = `<span class="ing-name">${ing}</span><span class="ing-amount"></span>`;
         } else {
           li.innerHTML = `
-            <span class="ing-name">${ing.name}</span>
-            <span class="ing-amount">${ing.amount}</span>
+            <span class="ing-name">${ing.name || ''}</span>
+            <span class="ing-amount">${ing.amount || ''}</span>
           `;
         }
         modalIngredients.appendChild(li);
       });
     }
 
-    // 手順の表示
     modalSteps.innerHTML = '';
     if (recipe.steps && recipe.steps.length > 0) {
       recipe.steps.forEach(step => {
@@ -421,7 +422,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 初期化実行
   resetForm();
   renderRecipes();
 });
