@@ -26,7 +26,7 @@
           <option value="その他">その他</option>
         </select>
 
-        <!-- 食材入力エリア -->
+        <!-- 食材入力エリア (食材名と分量を分離) -->
         <div class="field-container">
           <label><strong>食材リスト</strong></label>
           <div id="ingredients-list"></div>
@@ -63,7 +63,7 @@
     <section class="search-section">
       <h2>レシピを探す</h2>
       <div class="search-controls">
-        <input type="text" id="search-keyword" placeholder="料理名や食材で検索...">
+        <input type="text" id="search-keyword" placeholder="料理名で検索...">
         <select id="filter-category">
           <option value="all">すべてのジャンル</option>
           <option value="和食">和食</option>
@@ -71,6 +71,16 @@
           <option value="中華">中華</option>
           <option value="その他">その他</option>
         </select>
+      </div>
+
+      <!-- 複数食材での絞り込み機能 -->
+      <div class="ingredient-search-container">
+        <label><strong>使う食材で絞り込み (複数入力可)</strong></label>
+        <div class="ingredient-search-input-group">
+          <input type="text" id="ingredient-search-input" placeholder="食材名を入力 (例: 玉ねぎ)">
+          <button type="button" id="add-ingredient-filter-btn" class="btn-secondary">+ 追加</button>
+        </div>
+        <div id="ingredient-tags" class="ingredient-tags-list"></div>
       </div>
     </section>
 
