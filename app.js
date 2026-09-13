@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // PWA (Service Worker) 登録処理
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      console.log('SW registration failed: ', err);
+    });
+  }
+
   let recipes = [];
   try {
     recipes = JSON.parse(localStorage.getItem('recipes')) || [];
@@ -7,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let currentImageData = '';
-  let searchIngredientTags = []; // 検索用食材タグリスト
+  let searchIngredientTags = [];
 
   // DOM要素取得
   const recipeForm = document.getElementById('recipe-form');
@@ -52,8 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const div = document.createElement('div');
     div.className = 'dynamic-row ingredient-row';
     div.innerHTML = `
-      <input type="text" class="ingredient-name-input" placeholder="食材名 (例: 人参)" value="${name}">
-      <input type="text" class="ingredient-amount-input" placeholder="分量 (例: 1本)" value="${amount}">
+      <input type="text" class="ingredient-name-input" placeholder="食材名 (例: 強力粉)" value="${name}">
+      <input type="text" class="ingredient-amount-input" placeholder="分量 (例: 200g)" value="${amount}">
       <button type="button" class="btn-danger-sm remove-row-btn">削除</button>
     `;
     div.querySelector('.remove-row-btn').addEventListener('click', () => {
@@ -275,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'recipe-card';
 
-      const imgSrc = recipe.image || 'https://via.placeholder.com/300x200?text=No+Image';
+      const imgSrc = recipe.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect width="300" height="200" fill="%23eeeeee"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="20" fill="%23aaa">No Image</text></svg>';
 
       card.innerHTML = `
         <img src="${imgSrc}" class="card-img" alt="${recipe.title}">
