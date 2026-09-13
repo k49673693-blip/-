@@ -14,10 +14,9 @@
     <section class="form-section">
       <h2 id="form-title">新規レシピ追加</h2>
       <form id="recipe-form">
-        <!-- 編集時にIDを保持する隠しフィールド -->
         <input type="hidden" id="recipe-id">
 
-        <input type="text" id="title" placeholder="料理名 (例: カレーライス)" required>
+        <input type="text" id="title" placeholder="料理名 (例: 特製カレー)" required>
         
         <select id="category" required>
           <option value="">ジャンルを選択</option>
@@ -27,26 +26,35 @@
           <option value="その他">その他</option>
         </select>
 
-        <!-- 食材入力枠エリア -->
-        <div class="ingredients-container">
+        <!-- 食材入力エリア -->
+        <div class="field-container">
           <label><strong>食材リスト</strong></label>
           <div id="ingredients-list">
-            <!-- JavaScriptでここに「食材名 / 量」の入力行が追加されます -->
+            <!-- JavaScriptで動的追加 -->
           </div>
           <button type="button" id="add-ingredient-btn" class="btn-secondary">+ 食材を追加</button>
         </div>
 
-        <!-- 画像ファイル入力＆プレビューエリア -->
-        <div class="image-input-container">
-          <label for="image-file"><strong>レシピ画像</strong></label>
-          <input type="file" id="image-file" accept="image/*">
+        <!-- 作り方（手順番号あらかじめ表示）エリア -->
+        <div class="field-container">
+          <label><strong>作り方の手順</strong></label>
+          <div id="steps-list">
+            <!-- JavaScriptで動的追加 -->
+          </div>
+          <button type="button" id="add-step-btn" class="btn-secondary">+ 手順を追加</button>
+        </div>
+
+        <!-- JPG画像ファイル直接アップロード -->
+        <div class="field-container">
+          <label for="image-file"><strong>レシピ画像 (JPG / PNGなど)</strong></label>
+          <input type="file" id="image-file" accept="image/jpeg,image/png,image/webp">
           <div id="image-preview-container" class="image-preview-container" style="display: none;">
             <img id="image-preview" src="" alt="プレビュー">
             <button type="button" id="remove-image-btn" class="btn-danger-sm">画像を削除</button>
           </div>
         </div>
 
-        <textarea id="instructions" placeholder="作り方・メモ" rows="4"></textarea>
+        <textarea id="memo" placeholder="メモ・コツなど (任意)" rows="2"></textarea>
 
         <div class="form-buttons">
           <button type="submit" id="submit-btn">レシピを保存</button>
@@ -55,7 +63,7 @@
       </form>
     </section>
 
-    <!-- 検索・絞り込みエリア -->
+    <!-- 検索エリア -->
     <section class="search-section">
       <h2>レシピを探す</h2>
       <div class="search-controls">
@@ -76,20 +84,30 @@
     </section>
   </div>
 
-  <!-- レシピ拡大表示用モーダル（画面全体表示） -->
-  <div id="recipe-modal" class="modal">
-    <div class="modal-content">
-      <span class="close-btn" id="modal-close">&times;</span>
-      <img id="modal-image" src="" alt="">
-      <div class="modal-body">
-        <span id="modal-category" class="badge"></span>
-        <h2 id="modal-title"></h2>
-        
-        <h3>材料</h3>
-        <ul id="modal-ingredients" class="modal-ingredients-list"></ul>
-
-        <h3>作り方・メモ</h3>
-        <p id="modal-instructions" class="modal-instructions-text"></p>
+  <!-- レシピ全画面表示モーダル -->
+  <div id="recipe-modal" class="fullscreen-modal">
+    <div class="fullscreen-modal-content">
+      <button class="fullscreen-close-btn" id="modal-close">&times; 閉じる</button>
+      <div class="fullscreen-hero">
+        <img id="modal-image" src="" alt="レシピ画像">
+        <div class="fullscreen-hero-text">
+          <span id="modal-category" class="badge"></span>
+          <h1 id="modal-title"></h1>
+        </div>
+      </div>
+      <div class="fullscreen-body">
+        <div class="fullscreen-section">
+          <h3>材料</h3>
+          <ul id="modal-ingredients" class="modal-ingredients-list"></ul>
+        </div>
+        <div class="fullscreen-section">
+          <h3>作り方</h3>
+          <ol id="modal-steps" class="modal-steps-list"></ol>
+        </div>
+        <div class="fullscreen-section" id="modal-memo-container">
+          <h3>メモ・コツ</h3>
+          <p id="modal-memo" class="modal-memo-text"></p>
+        </div>
       </div>
     </div>
   </div>
