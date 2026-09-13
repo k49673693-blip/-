@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>マイ レシピノート</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🍳 マイ レシピノート</h1>
+
+    <!-- レシピ追加フォーム -->
+    <section class="form-section">
+      <h2>新規レシピ追加</h2>
+      <form id="recipe-form">
+        <input type="text" id="title" placeholder="料理名 (例: カレーライス)" required>
+        <input type="text" id="ingredients" placeholder="使う食材 (カンマ区切り: 玉ねぎ, 人参, 豚肉)" required>
+        
+        <select id="category" required>
+          <option value="">ジャンルを選択</option>
+          <option value="和食">和食</option>
+          <option value="洋食">洋食</option>
+          <option value="中華">中華</option>
+          <option value="その他">その他</option>
+        </select>
+
+        <input type="url" id="image-url" placeholder="画像URL (任意)">
+        <textarea id="instructions" placeholder="作り方・メモ" rows="3"></textarea>
+
+        <button type="submit">レシピを保存</button>
+      </form>
+    </section>
+
+    <!-- 検索・絞り込みエリア -->
+    <section class="search-section">
+      <h2>レシピを探す</h2>
+      <div class="search-controls">
+        <input type="text" id="search-keyword" placeholder="料理名や食材で検索...">
+        
+        <select id="filter-category">
+          <option value="all">すべてのジャンル</option>
+          <option value="和食">和食</option>
+          <option value="洋食">洋食</option>
+          <option value="中華">中華</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- レシピ一覧表示 -->
+    <section class="list-section">
+      <div id="recipe-list" class="recipe-grid"></div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
