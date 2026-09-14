@@ -54,6 +54,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalMemo = document.getElementById('modal-memo');
   const modalMemoContainer = document.getElementById('modal-memo-container');
 
+  // テキスト内のURLをリンクタグ(<a>)に自動変換する関数
+  function formatMemoText(text) {
+    if (!text) return '';
+    // HTML特殊文字のエスケープ（XSS対策）
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    // URLの正規表現
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+    // URL部分を <a> タグに置換
+    return escaped.replace(urlRegex, (url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    });
+  }
+
   // 食材行追加
   function addIngredientRow(name = '', amount = '') {
     const div = document.createElement('div');
@@ -405,8 +425,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    // メモ欄の描画（URLのリンク化と改行適用）
     if (recipe.memo) {
-      modalMemo.textContent = recipe.memo;
+      modalMemo.innerHTML = formatMemoText(recipe.memo);
       modalMemoContainer.style.display = 'block';
     } else {
       modalMemoContainer.style.display = 'none';
