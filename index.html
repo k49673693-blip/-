@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>マイ レシピノート</title>
@@ -7,7 +10,18 @@
 </head>
 <body>
   <div class="container">
-@@ -23,10 +25,12 @@
+    <h1>🍳 マイ レシピノート</h1>
+
+    <!-- レシピ入力・編集フォーム -->
+    <section class="form-section">
+      <h2 id="form-title">新規レシピ追加</h2>
+      <form id="recipe-form">
+        <input type="hidden" id="recipe-id">
+
+        <input type="text" id="title" placeholder="料理名 (例: 特製カレー)" required>
+        
+        <select id="category" required>
+          <option value="">ジャンルを選択</option>
           <option value="和食">和食</option>
           <option value="洋食">洋食</option>
           <option value="中華">中華</option>
@@ -16,12 +30,46 @@
           <option value="その他">その他</option>
         </select>
 
-        <!-- 食材入力エリア (食材名と分量を分離) -->
         <!-- 食材入力エリア -->
         <div class="field-container">
           <label><strong>食材リスト</strong></label>
           <div id="ingredients-list"></div>
-@@ -69,55 +73,57 @@
+          <button type="button" id="add-ingredient-btn" class="btn-secondary">+ 食材を追加</button>
+        </div>
+
+        <!-- 作り方（手順番号）エリア -->
+        <div class="field-container">
+          <label><strong>作り方の手順</strong></label>
+          <div id="steps-list"></div>
+          <button type="button" id="add-step-btn" class="btn-secondary">+ 手順を追加</button>
+        </div>
+
+        <!-- 画像ファイルアップロード -->
+        <div class="field-container">
+          <label for="image-file"><strong>レシピ画像 (JPG / PNGなど)</strong></label>
+          <input type="file" id="image-file" accept="image/jpeg,image/png,image/webp">
+          <div id="image-preview-container" class="image-preview-container" style="display: none;">
+            <img id="image-preview" src="" alt="プレビュー">
+            <button type="button" id="remove-image-btn" class="btn-danger-sm">画像を削除</button>
+          </div>
+        </div>
+
+        <textarea id="memo" placeholder="メモ・コツなど (任意)" rows="2"></textarea>
+
+        <div class="form-buttons">
+          <button type="submit" id="submit-btn">レシピを保存</button>
+          <button type="button" id="cancel-btn" style="display: none; background-color: #888;">キャンセル</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 検索エリア -->
+    <section class="search-section">
+      <h2>レシピを探す</h2>
+      <div class="search-controls">
+        <input type="text" id="search-keyword" placeholder="料理名で検索...">
+        <select id="filter-category">
+          <option value="all">すべてのジャンル</option>
           <option value="和食">和食</option>
           <option value="洋食">洋食</option>
           <option value="中華">中華</option>
