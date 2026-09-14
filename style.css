@@ -376,6 +376,8 @@ button[type="submit"] {
   line-height: 1.8;
   font-size: 1.15rem;
   color: #222;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .modal-steps-list li::marker {
@@ -384,6 +386,7 @@ button[type="submit"] {
   font-size: 1.2rem;
 }
 
+/* メモ欄の折り返し・改行スタイル */
 .modal-memo-text {
   background: #fffbe6;
   padding: 14px;
@@ -391,4 +394,16 @@ button[type="submit"] {
   border: 1px solid #ffe58f;
   font-size: 1.05rem;
   line-height: 1.7;
+  white-space: pre-wrap;     /* 入力した改行をそのまま保持 */
+  word-break: break-word;    /* 長い文章やURLを枠内で自動折り返し */
+}
+
+/* メモ欄内のリンク表示 */
+.modal-memo-text a {
+  color: #0284c7;
+  text-decoration: underline;
+}
+
+.modal-memo-text a:hover {
+  color: #0369a1;
 }
