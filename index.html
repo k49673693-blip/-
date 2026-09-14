@@ -3,127 +3,452 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>マイ レシピノート</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
-  <meta name="theme-color" content="#d9534f">
+  <title>日記＆ヘルスケア カレンダー</title>
+  <style>
+    :root {
+      --primary-color: #4a90e2;
+      --bg-color: #f4f7f6;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+      --annual-color: #d32f2f;
+      --saturday-color: #1976d2;
+      --sunday-holiday-color: #d32f2f;
+      --sat-bg-color: #e3f2fd;
+      --sun-holiday-bg-color: #ffebee;
+      --today-bg: #fff9c4;
+      --today-border: #fbc02d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-color); padding: 15px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    
+    header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; background: var(--card-bg); padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    header h1 { font-size: 1.3rem; margin: 0; }
+    .nav-group { display: flex; align-items: center; gap: 5px; }
+    .header-btns { display: flex; gap: 8px; }
+    .btn { padding: 8px 12px; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem; }
+    .nav-btn { background: #eee; color: #333; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: bold; }
+    
+    /* エラー・非常用通知バー */
+    #error-bar { display: none; background: #ffebee; border: 1px solid #f44336; color: #c62828; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.85rem; line-height: 1.4; }
+    #error-bar button { margin-top: 8px; background: #d32f2f; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+
+    /* カレンダーグリッド */
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; background: var(--card-bg); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); min-height: 400px; }
+    .day-header { text-align: center; font-weight: bold; padding: 8px 0; color: #666; font-size: 0.9rem; }
+    .day-header.sat { color: var(--saturday-color); }
+    .day-header.sun { color: var(--sunday-holiday-color); }
+
+    .day-cell { min-height: 105px; background: #fff; border: 1px solid var(--border-color); border-radius: 5px; padding: 4px; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; }
+    .day-cell.sat-bg { background-color: var(--sat-bg-color); }
+    .day-cell.sun-holiday-bg { background-color: var(--sun-holiday-bg-color); }
+
+    .day-cell.is-today { background-color: var(--today-bg) !important; border: 2px solid var(--today-border) !important; }
+    .is-today .date-num span:first-child { background: var(--today-border); color: #000; padding: 2px 6px; border-radius: 10px; }
+
+    .date-num { font-weight: bold; font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+    .date-num.sat { color: var(--saturday-color); }
+    .date-num.sun-holiday { color: var(--sunday-holiday-color); }
+    .holiday-name { font-size: 0.65rem; font-weight: normal; margin-left: 2px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+
+    .event-badge { font-size: 0.72rem; padding: 2px 4px; border-radius: 3px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .annual-badge { background-color: #ffebee; color: var(--annual-color); border: 1px solid #ffcdd2; font-weight: bold; }
+    .regular-badge { background-color: #e3f2fd; color: #1976d2; }
+    .health-badge { font-size: 0.68rem; color: #e65100; background: #fff3e0; padding: 1px 3px; border-radius: 3px; margin-top: auto; }
+    .diary-indicator { font-size: 0.68rem; color: #2e7d32; background: #e8f5e9; padding: 1px 3px; border-radius: 3px; margin-top: 2px; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; padding: 20px; border-radius: 10px; width: 92%; max-width: 550px; max-height: 90vh; overflow-y: auto; }
+    .modal-content h2 { margin-bottom: 12px; font-size: 1.1rem; }
+    
+    form { display: flex; flex-direction: column; gap: 10px; }
+    .form-row { display: flex; gap: 10px; }
+    .form-group { flex: 1; }
+    label { font-size: 0.8rem; font-weight: bold; color: #555; display: block; margin-bottom: 3px; }
+    input[type="text"], input[type="number"], textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+    textarea { height: 80px; resize: vertical; }
+    
+    .modal-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+    .btn-save { background: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+    .btn-cancel { background: #ccc; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+    .annual-list { margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px; }
+    .annual-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+    .btn-delete { background: #ff5252; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.75rem; }
+
+    .span-selector { display: flex; gap: 5px; margin-bottom: 15px; }
+    .span-btn { flex: 1; padding: 6px; border: 1px solid var(--primary-color); background: white; color: var(--primary-color); border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+    .span-btn.active { background: var(--primary-color); color: white; }
+    #chart-container { width: 100%; height: 260px; border: 1px solid #eee; border-radius: 5px; background: #fafafa; overflow: hidden; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🍳 マイ レシピノート</h1>
 
-    <!-- レシピ入力・編集フォーム -->
-    <section class="form-section">
-      <h2 id="form-title">新規レシピ追加</h2>
-      <form id="recipe-form">
-        <input type="hidden" id="recipe-id">
-
-        <input type="text" id="title" placeholder="料理名 (例: 特製カレー)" required>
-        
-        <select id="category" required>
-          <option value="">ジャンルを選択</option>
-          <option value="和食">和食</option>
-          <option value="洋食">洋食</option>
-          <option value="中華">中華</option>
-          <option value="パン">パン</option>
-          <option value="お菓子">お菓子</option>
-          <option value="その他">その他</option>
-        </select>
-
-        <!-- 食材入力エリア -->
-        <div class="field-container">
-          <label><strong>食材リスト</strong></label>
-          <div id="ingredients-list"></div>
-          <button type="button" id="add-ingredient-btn" class="btn-secondary">+ 食材を追加</button>
-        </div>
-
-        <!-- 作り方（手順番号）エリア -->
-        <div class="field-container">
-          <label><strong>作り方の手順</strong></label>
-          <div id="steps-list"></div>
-          <button type="button" id="add-step-btn" class="btn-secondary">+ 手順を追加</button>
-        </div>
-
-        <!-- 画像ファイルアップロード -->
-        <div class="field-container">
-          <label for="image-file"><strong>レシピ画像 (JPG / PNGなど)</strong></label>
-          <input type="file" id="image-file" accept="image/jpeg,image/png,image/webp">
-          <div id="image-preview-container" class="image-preview-container" style="display: none;">
-            <img id="image-preview" src="" alt="プレビュー">
-            <button type="button" id="remove-image-btn" class="btn-danger-sm">画像を削除</button>
-          </div>
-        </div>
-
-        <textarea id="memo" placeholder="メモ・コツなど (任意)" rows="2"></textarea>
-
-        <div class="form-buttons">
-          <button type="submit" id="submit-btn">レシピを保存</button>
-          <button type="button" id="cancel-btn" style="display: none; background-color: #888;">キャンセル</button>
-        </div>
-      </form>
-    </section>
-
-    <!-- 検索エリア -->
-    <section class="search-section">
-      <h2>レシピを探す</h2>
-      <div class="search-controls">
-        <input type="text" id="search-keyword" placeholder="料理名で検索...">
-        <select id="filter-category">
-          <option value="all">すべてのジャンル</option>
-          <option value="和食">和食</option>
-          <option value="洋食">洋食</option>
-          <option value="中華">中華</option>
-          <option value="パン">パン</option>
-          <option value="お菓子">お菓子</option>
-          <option value="その他">その他</option>
-        </select>
-      </div>
-
-      <!-- 複数食材での絞り込み機能 -->
-      <div class="ingredient-search-container">
-        <label><strong>使う食材で絞り込み (複数入力可)</strong></label>
-        <div class="ingredient-search-input-group">
-          <input type="text" id="ingredient-search-input" placeholder="食材名を入力 (例: 玉ねぎ)">
-          <button type="button" id="add-ingredient-filter-btn" class="btn-secondary">+ 追加</button>
-        </div>
-        <div id="ingredient-tags" class="ingredient-tags-list"></div>
-      </div>
-    </section>
-
-    <!-- レシピ一覧表示 -->
-    <section class="list-section">
-      <div id="recipe-list" class="recipe-grid"></div>
-    </section>
+<div class="container">
+  <div id="error-bar">
+    <div id="error-msg"></div>
+    <button onclick="resetDataAndReload()">保存データをクリアして再起動する</button>
   </div>
 
-  <!-- レシピ全画面表示モーダル -->
-  <div id="recipe-modal" class="fullscreen-modal">
-    <div class="fullscreen-modal-content">
-      <button class="fullscreen-close-btn" id="modal-close" type="button">&times; 閉じる</button>
-      <div class="fullscreen-hero" id="modal-hero-container">
-        <img id="modal-image" src="" alt="レシピ画像">
-        <div class="fullscreen-hero-text">
-          <span id="modal-category" class="badge"></span>
-          <h1 id="modal-title"></h1>
-        </div>
-      </div>
-      <div class="fullscreen-body">
-        <div class="fullscreen-section">
-          <h3>材料</h3>
-          <ul id="modal-ingredients" class="modal-ingredients-list"></ul>
-        </div>
-        <div class="fullscreen-section">
-          <h3>作り方</h3>
-          <ol id="modal-steps" class="modal-steps-list"></ol>
-        </div>
-        <div class="fullscreen-section" id="modal-memo-container">
-          <h3>メモ・コツ</h3>
-          <p id="modal-memo" class="modal-memo-text"></p>
-        </div>
-      </div>
+  <header>
+    <div class="nav-group">
+      <button class="nav-btn" id="prev-month">&lt;</button>
+      <span id="month-display" style="font-size: 1.1rem; font-weight: bold; margin: 0 8px;">---</span>
+      <button class="nav-btn" id="next-month">&gt;</button>
     </div>
-  </div>
+    <h1>日記＆ヘルスケア</h1>
+    <div class="header-btns">
+      <button class="btn" id="open-graph-modal" style="background:#2e7d32;">📊 グラフ</button>
+      <button class="btn" id="open-annual-modal">★ 恒例設定</button>
+    </div>
+  </header>
 
-  <script src="app.js"></script>
-</body>
-</html>
+  <div class="calendar-grid" id="calendar"></div>
+</div>
+
+<div class="modal" id="day-modal">
+  <div class="modal-content">
+    <h2 id="modal-date-title"></h2>
+    <form id="day-form">
+      <div><label>本日の予定</label><input type="text" id="event-input"></div>
+      <div class="form-row">
+        <div class="form-group"><label>体重 (kg)</label><input type="number" step="0.1" id="weight-input"></div>
+        <div class="form-group"><label>体脂肪率 (%)</label><input type="number" step="0.1" id="fat-input"></div>
+      </div>
+      <div><label>日記</label><textarea id="diary-input"></textarea></div>
+      <div class="modal-buttons">
+        <button type="button" class="btn-cancel" id="close-day-modal">キャンセル</button>
+        <button type="submit" class="btn-save">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="annual-modal">
+  <div class="modal-content">
+    <h2>毎年恒例の設定</h2>
+    <form id="annual-form">
+      <div class="form-row">
+        <div class="form-group" style="flex: 0.4;"><label>月日(MM-DD)</label><input type="text" id="annual-date" placeholder="04-15" required></div>
+        <div class="form-group"><label>予定名</label><input type="text" id="annual-title" required></div>
+      </div>
+      <button type="submit" class="btn-save" style="margin-top: 5px;">追加</button>
+    </form>
+    <div class="annual-list">
+      <h3>登録一覧</h3><div id="annual-items-container"></div>
+    </div>
+    <div class="modal-buttons"><button type="button" class="btn-cancel" id="close-annual-modal">閉じる</button></div>
+  </div>
+</div>
+
+<div class="modal" id="graph-modal">
+  <div class="modal-content" style="max-width: 700px;">
+    <h2>推移グラフ</h2>
+    <div class="span-selector">
+      <button class="span-btn" data-span="week">1週間</button>
+      <button class="span-btn active" data-span="month">1ヶ月</button>
+      <button class="span-btn" data-span="year">1年</button>
+    </div>
+    <div id="chart-container"></div>
+    <div class="modal-buttons"><button type="button" class="btn-cancel" id="close-graph-modal">閉じる</button></div>
+  </div>
+</div>
+
+<script>
+window.onerror = function(msg, url, line) {
+  showError('エラー検知: ' + msg + ' (' + line + '行目)');
+  return false;
+};
+
+function showError(text) {
+  var eb = document.getElementById('error-bar');
+  var em = document.getElementById('error-msg');
+  if (eb && em) {
+    em.textContent = text;
+    eb.style.display = 'block';
+  }
+}
+
+function resetDataAndReload() {
+  if (confirm('保存データをリセットしてアプリを再読み込みしますか？')) {
+    try {
+      localStorage.removeItem('calendar_diary_days');
+      localStorage.removeItem('calendar_diary_annual');
+    } catch(e) {}
+    location.reload();
+  }
+}
+
+(function() {
+  var currentDate = new Date();
+  var today = new Date();
+  var selectedDateStr = '';
+  var currentSpan = 'month';
+  var STORAGE_KEY_DAYS = 'calendar_diary_days';
+  var STORAGE_KEY_ANNUAL = 'calendar_diary_annual';
+  var isInitialized = false;
+
+  function safeAddEvent(id, eventType, callback) {
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener(eventType, callback); }
+  }
+
+  function safeGetStorage(key, isArray) {
+    try {
+      var item = localStorage.getItem(key);
+      if (!item) return isArray ? [] : {};
+      var parsed = JSON.parse(item);
+      if (isArray) return Array.isArray(parsed) ? parsed : [];
+      return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
+    } catch(e) {
+      return isArray ? [] : {};
+    }
+  }
+
+  function safeSetStorage(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+  }
+  
+  function getDayData() { return safeGetStorage(STORAGE_KEY_DAYS, false); }
+  function getAnnualData() { return safeGetStorage(STORAGE_KEY_ANNUAL, true); }
+
+  function getJapaneseHoliday(year, month, day) {
+    try {
+      var mm = (month < 10 ? '0' : '') + month;
+      var dd = (day < 10 ? '0' : '') + day;
+      var mmdd = mm + '-' + dd;
+      var fixedHolidays = {
+        '01-01': '元日', '02-11': '建国記念の日', '02-23': '天皇誕生日',
+        '04-29': '昭和の日', '05-03': '憲法記念日', '05-04': 'みどりの日',
+        '05-05': 'こどもの日', '08-11': '山の日', '11-03': '文化の日', '11-23': '勤労感謝の日'
+      };
+      if (fixedHolidays[mmdd]) return fixedHolidays[mmdd];
+
+      if (month === 3) {
+        var vernal = Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+        if (day === vernal) return '春分の日';
+      }
+      if (month === 9) {
+        var autumnal = Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+        if (day === autumnal) return '秋分の日';
+      }
+
+      var dateObj = new Date(year, month - 1, day);
+      if (dateObj.getDay() === 1) {
+        var nthOfWeek = Math.floor((day - 1) / 7) + 1;
+        if (month === 1 && nthOfWeek === 2) return '成人の日';
+        if (month === 7 && nthOfWeek === 3) return '海の日';
+        if (month === 9 && nthOfWeek === 3) return '敬老の日';
+        if (month === 10 && nthOfWeek === 2) return 'スポーツの日';
+      }
+    } catch(e) {}
+    return null;
+  }
+
+  function renderCalendar() {
+    try {
+      var calendarEl = document.getElementById('calendar');
+      var monthDisplay = document.getElementById('month-display');
+      if (!calendarEl) return; 
+
+      calendarEl.innerHTML = '';
+      var year = currentDate.getFullYear();
+      var month = currentDate.getMonth();
+      
+      if (monthDisplay) {
+        monthDisplay.textContent = year + '年 ' + (month + 1) + '月';
+      }
+
+      var daysOfWeek = [{n:'日',c:'sun'}, {n:'月',c:''}, {n:'火',c:''}, {n:'水',c:''}, {n:'木',c:''}, {n:'金',c:''}, {n:'土',c:'sat'}];
+      for (var i = 0; i < daysOfWeek.length; i++) {
+        var d = daysOfWeek[i];
+        var h = document.createElement('div');
+        h.className = 'day-header ' + d.c;
+        h.textContent = d.n;
+        calendarEl.appendChild(h);
+      }
+
+      var firstDay = new Date(year, month, 1).getDay();
+      var lastDate = new Date(year, month + 1, 0).getDate();
+      for (var i = 0; i < firstDay; i++) {
+        calendarEl.appendChild(document.createElement('div'));
+      }
+
+      var dayData = getDayData();
+      var annualData = getAnnualData();
+      var ty = today.getFullYear(), tm = today.getMonth(), td = today.getDate();
+
+      for (var date = 1; date <= lastDate; date++) {
+        var cell = document.createElement('div');
+        cell.className = 'day-cell';
+
+        var dw = new Date(year, month, date).getDay();
+        var hol = getJapaneseHoliday(year, month + 1, date);
+
+        if (dw === 0 || hol) cell.classList.add('sun-holiday-bg');
+        else if (dw === 6) cell.classList.add('sat-bg');
+
+        if (year === ty && month === tm && date === td) cell.classList.add('is-today');
+
+        var mm = (month + 1 < 10 ? '0' : '') + (month + 1);
+        var dd = (date < 10 ? '0' : '') + date;
+        var fKey = year + '-' + mm + '-' + dd;
+        var mmdd = mm + '-' + dd;
+        
+        var dNum = document.createElement('div');
+        dNum.className = 'date-num ' + (dw === 0 || hol ? 'sun-holiday' : (dw === 6 ? 'sat' : ''));
+        dNum.innerHTML = '<span>' + date + '</span>' + (hol ? '<span class="holiday-name">' + hol + '</span>' : '');
+        cell.appendChild(dNum);
+
+        for (var j = 0; j < annualData.length; j++) {
+          var a = annualData[j];
+          if (a && a.mmdd === mmdd) {
+            var b = document.createElement('div'); b.className = 'event-badge annual-badge'; b.textContent = '★ ' + (a.title || ''); cell.appendChild(b);
+          }
+        }
+
+        if (dayData[fKey]) {
+          var item = dayData[fKey];
+          if (item.event) {
+            var b = document.createElement('div'); b.className = 'event-badge regular-badge'; b.textContent = item.event; cell.appendChild(b);
+          }
+          if (item.weight || item.fat) {
+            var b = document.createElement('div'); b.className = 'health-badge'; b.textContent = '⚖️ ' + (item.weight||'') + ' ' + (item.fat||''); cell.appendChild(b);
+          }
+          if (item.diary) {
+            var b = document.createElement('div'); b.className = 'diary-indicator'; b.textContent = '📖 日記あり'; cell.appendChild(b);
+          }
+        }
+
+        (function(k){ cell.onclick = function(){ openDayModal(k); }; })(fKey);
+        calendarEl.appendChild(cell);
+      }
+    } catch(err) {
+      showError('カレンダー描画中にエラーが発生しました: ' + err.message);
+    }
+  }
+
+  function openDayModal(dStr) {
+    selectedDateStr = dStr;
+    var dt = document.getElementById('modal-date-title');
+    if(dt) dt.textContent = dStr;
+    var info = getDayData()[dStr] || {};
+    if(document.getElementById('event-input')) document.getElementById('event-input').value = info.event || '';
+    if(document.getElementById('weight-input')) document.getElementById('weight-input').value = info.weight || '';
+    if(document.getElementById('fat-input')) document.getElementById('fat-input').value = info.fat || '';
+    if(document.getElementById('diary-input')) document.getElementById('diary-input').value = info.diary || '';
+    var m = document.getElementById('day-modal'); if(m) m.classList.add('active');
+  }
+
+  function renderAnnualList() {
+    var c = document.getElementById('annual-items-container');
+    if(!c) return;
+    c.innerHTML = '';
+    var annualData = getAnnualData();
+    for (var i = 0; i < annualData.length; i++) {
+      var item = annualData[i];
+      if(!item) continue;
+      var d = document.createElement('div'); d.className = 'annual-item';
+      d.innerHTML = '<span>[' + (item.mmdd||'') + '] ' + (item.title||'') + '</span><button class="btn-delete">削除</button>';
+      var btn = d.querySelector('.btn-delete');
+      if (btn) {
+        (function(id) { btn.onclick = function() { window.deleteAnnual(id); }; })(item.id);
+      }
+      c.appendChild(d);
+    }
+  }
+
+  window.deleteAnnual = function(id) {
+    var data = getAnnualData();
+    var updated = [];
+    for (var i = 0; i < data.length; i++) {
+      if (data[i] && data[i].id !== id) updated.push(data[i]);
+    }
+    safeSetStorage(STORAGE_KEY_ANNUAL, updated);
+    renderAnnualList();
+    renderCalendar();
+  };
+
+  function renderSvgChart() {
+    var container = document.getElementById('chart-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    var dayData = getDayData();
+    var keys = [];
+    for (var key in dayData) { if (dayData.hasOwnProperty(key)) keys.push(key); }
+    keys.sort();
+
+    var now = new Date();
+    var validData = [];
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      var itemDate = new Date(k);
+      var target = new Date();
+      var isValid = false;
+      
+      if (currentSpan === 'week') {
+        target.setDate(now.getDate() - 7);
+        if (itemDate >= target) isValid = true;
+      } else if (currentSpan === 'month') {
+        target.setMonth(now.getMonth() - 1);
+        if (itemDate >= target) isValid = true;
+      } else if (currentSpan === 'year') {
+        target.setFullYear(now.getFullYear() - 1);
+        if (itemDate >= target) isValid = true;
+      }
+
+      if (isValid) {
+        var item = dayData[k] || {};
+        var w = parseFloat(item.weight);
+        var f = parseFloat(item.fat);
+        if (!isNaN(w) || !isNaN(f)) {
+          validData.push({ date: k, w: isNaN(w) ? null : w, f: isNaN(f) ? null : f });
+        }
+      }
+    }
+
+    if (validData.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding-top:100px; color:#999;">データがありません</div>';
+      return;
+    }
+
+    var width = container.clientWidth || 500;
+    var height = 260;
+    var padding = 40;
+
+    var wValues = []; var fValues = [];
+    for (var i = 0; i < validData.length; i++) {
+      if (validData[i].w !== null) wValues.push(validData[i].w);
+      if (validData[i].f !== null) fValues.push(validData[i].f);
+    }
+
+    var minW = wValues.length ? Math.min.apply(null, wValues) - 1 : 0;
+    var maxW = wValues.length ? Math.max.apply(null, wValues) + 1 : 100;
+    var minF = fValues.length ? Math.min.apply(null, fValues) - 1 : 0;
+    var maxF = fValues.length ? Math.max.apply(null, fValues) + 1 : 50;
+
+    var svgHtml = '<svg width="100%" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '" style="background:#fff;">';
+    svgHtml += '<line x1="' + padding + '" y1="' + (height - padding) + '" x2="' + (width - padding) + '" y2="' + (height - padding) + '" stroke="#ccc" />';
+    svgHtml += '<text x="' + padding + '" y="20" fill="#1976d2" font-size="12">■ 体重(kg)</text>';
+    svgHtml += '<text x="' + (padding + 100) + '" y="20" fill="#f57c00" font-size="12">■ 体脂肪率(%)</text>';
+
+    var stepX = validData.length > 1 ? (width - padding * 2) / (validData.length - 1) : 0;
+    var pointsW = [];
+    var pointsF = [];
+
+    /* ！！ここから下が途切れてしまっていた部分です！！ */
+    for (var i = 0; i < validData.length; i++) {
+      var x = padding + i * stepX;
+      
+      if (validData[i].w !== null) {
+        var yW = height - padding - ((validData[i].w - minW) / (maxW - minW)) * (height - padding * 2);
+        pointsW.push(x + ',' + yW);
+        svgHtml += '<circle cx="' + x + '" cy="' + yW + '" r="3" fill="#1976d2" />';
+      }
+      
+      if (validData[i].f !== null) {
+        var yF = height - padding - ((validData[i].f - minF) / (maxF - minF)) * (height - padding * 2);
+   
