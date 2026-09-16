@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const recipeForm = document.getElementById('recipe-form');
   const recipeIdInput = document.getElementById('recipe-id');
   const titleInput = document.getElementById('title');
-  const yieldInput = document.getElementById('yield'); // 何人前入力欄
+  const yieldInput = document.getElementById('yield');
   const categoryInput = document.getElementById('category');
   const ingredientsList = document.getElementById('ingredients-list');
   const stepsList = document.getElementById('steps-list');
@@ -49,14 +49,82 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalClose = document.getElementById('modal-close');
   const modalImage = document.getElementById('modal-image');
   const modalTitle = document.getElementById('modal-title');
-  const modalYield = document.getElementById('modal-yield'); // モーダルの何人前表示
   const modalCategory = document.getElementById('modal-category');
   const modalIngredients = document.getElementById('modal-ingredients');
   const modalSteps = document.getElementById('modal-steps');
   const modalMemo = document.getElementById('modal-memo');
   const modalMemoContainer = document.getElementById('modal-memo-container');
 
-  // フォームに「何人前」入力欄がない場合は動的に追加
+  // -------------------------------------------------------------
+  // ② カテゴリー（ジャンル）のデフォルト表示設定
+  // -------------------------------------------------------------
+  if (categoryInput) {
+    // 最初の空のoptionがあれば文言を設定、なければ追加
+    let defaultOpt = categoryInput.querySelector('option[value=""]');
+    if (!defaultOpt) {
+      defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      categoryInput.insertBefore(defaultOpt, categoryInput.firstChild);
+    }
+    defaultOpt.textContent = 'ジャンルを選択してください';
+    defaultOpt.disabled = false;
+  }
+
+  // -------------------------------------------------------------
+  // ① 「+ レシピ追加」ボタンの動的追加とフォーム開閉制御
+  // -------------------------------------------------------------
+  const formContainer = recipeForm ? recipeForm.closest('.form-container') || recipeForm : null;
+  let toggleFormBtn = document.getElementById('toggle-form-btn');
+
+  if (!toggleFormBtn && formContainer) {
+    toggleFormBtn = document.createElement('button');
+    toggleFormBtn.id = 'toggle-form-btn';
+    toggleFormBtn.type = 'button';
+    toggleFormBtn.textContent = '＋ レシピを追加';
+    toggleFormBtn.style.cssText = 'width: 100%; padding: 12px; margin-bottom: 16px; font-size: 16px; font-weight: bold; background-color: #ff9800; color: #fff; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.15);';
+    
+    // フォームの直前にボタンを挿入
+    formContainer.parentNode.insertBefore(toggleFormBtn, formContainer);
+
+    // 最初はフォームを非表示にする
+    formContainer.style.display = 'none';
+
+    toggleFormBtn.addEventListener('click', () => {
+      if (formContainer.style.display === 'none') {
+        formContainer.style.display = 'block';
+        toggleFormBtn.textContent = '✕ フォームを閉じる';
+        toggleFormBtn.style.backgroundColor = '#757575';
+      } else {
+        formContainer.style.display = 'none';
+        toggleFormBtn.textContent = '＋ レシピを追加';
+        toggleFormBtn.style.backgroundColor = '#ff9800';
+      }
+    });
+  }
+
+  // フォームを開く関数
+  function showForm() {
+    if (formContainer) {
+      formContainer.style.display = 'block';
+      if (toggleFormBtn) {
+        toggleFormBtn.textContent = '✕ フォームを閉じる';
+        toggleFormBtn.style.backgroundColor = '#757575';
+      }
+    }
+  }
+
+  // フォームを閉じる関数
+  function hideForm() {
+    if (formContainer) {
+      formContainer.style.display = 'none';
+      if (toggleFormBtn) {
+        toggleFormBtn.textContent = '＋ レシピを追加';
+        toggleFormBtn.style.backgroundColor = '#ff9800';
+      }
+    }
+  }
+
+  // 「何人前」入力欄の生成
   if (!yieldInput && titleInput) {
     const yieldDiv = document.createElement('div');
     yieldDiv.className = 'form-group';
@@ -215,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       resetForm();
+      hideForm(); // 保存後にフォームをたたむ
       renderRecipes();
     });
   }
@@ -224,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (titleInput) titleInput.value = '';
     const yEl = document.getElementById('yield');
     if (yEl) yEl.value = '';
-    if (categoryInput) categoryInput.value = '主菜';
+    if (categoryInput) categoryInput.value = '';
     if (ingredientsList) ingredientsList.innerHTML = '';
     if (stepsList) stepsList.innerHTML = '';
     currentImageData = '';
@@ -242,7 +311,12 @@ document.addEventListener('DOMContentLoaded', () => {
     addStepRow();
   }
 
-  if (cancelBtn) cancelBtn.addEventListener('click', resetForm);
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      resetForm();
+      hideForm();
+    });
+  }
 
   // 食材タグ描画
   function renderIngredientTags() {
@@ -334,6 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.querySelector('.btn-edit').addEventListener('click', (e) => {
         e.stopPropagation();
         loadRecipeToForm(recipe);
+        showForm(); // 編集時にもフォームを展開する
       });
 
       card.querySelector('.btn-delete').addEventListener('click', (e) => {
@@ -355,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (titleInput) titleInput.value = recipe.title || '';
     const yEl = document.getElementById('yield');
     if (yEl) yEl.value = recipe.recipeYield || '';
-    if (categoryInput) categoryInput.value = recipe.category || '主菜';
+    if (categoryInput) categoryInput.value = recipe.category || '';
     if (memoInput) memoInput.value = recipe.memo || '';
 
     if (ingredientsList) ingredientsList.innerHTML = '';
@@ -466,7 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadRecipeToForm({
           title: data.title || '',
           recipeYield: data.recipeYield || '',
-          category: '主菜',
+          category: '',
           ingredients: (data.ingredients && data.ingredients.length > 0) ? data.ingredients : [],
           steps: [],
           image: '',
@@ -478,6 +553,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (imagePreview) imagePreview.src = data.imageUrl;
           if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
         }
+
+        showForm(); // 外部から取り込んだ時は自動的にフォームを開く
 
         window.history.replaceState({}, document.title, window.location.pathname);
         alert('レシピ情報を自動入力しました！');
