@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const recipeForm = document.getElementById('recipe-form');
   const recipeIdInput = document.getElementById('recipe-id');
   const titleInput = document.getElementById('title');
-  const yieldInput = document.getElementById('yield');
   const categoryInput = document.getElementById('category');
   const ingredientsList = document.getElementById('ingredients-list');
   const stepsList = document.getElementById('steps-list');
@@ -56,10 +55,139 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalMemoContainer = document.getElementById('modal-memo-container');
 
   // -------------------------------------------------------------
-  // ② カテゴリー（ジャンル）のデフォルト表示設定
+  // 何人前入力欄の動的生成（フォーム内部への配置）
   // -------------------------------------------------------------
+  let yieldInput = document.getElementById('yield');
+  if (!yieldInput && titleInput) {
+    const titleGroup = titleInput.closest('.form-group') || titleInput.parentNode;
+    const yieldDiv = document.createElement('div');
+    yieldDiv.className = 'form-group';
+    yieldDiv.style.cssText = 'margin-bottom: 12px;';
+    yieldDiv.innerHTML = `
+      <label for="yield" style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 4px;">何人前 / 分量 (例: 2人分, 18cm型1個)</label>
+      <input type="text" id="yield" placeholder="例: 2人分" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+    `;
+    titleGroup.parentNode.insertBefore(yieldDiv, titleGroup.nextSibling);
+    yieldInput = document.getElementById('yield');
+  }
+
+  // -------------------------------------------------------------
+  // 画像の自動軽量化・リサイズ処理 (最大幅800px / 圧縮率0.8)
+  // -------------------------------------------------------------
+  function compressImage(srcUrl, maxWidth = 800, quality = 0.8) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        let dataUrl = canvas.toDataURL('image/webp', quality);
+        if (!dataUrl.startsWith('data:image/webp')) {
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve(srcUrl);
+      img.src = srcUrl;
+    });
+  }
+
+  // -------------------------------------------------------------
+  // バックアップ (JSONエクスポート / インポート) 機能 UI設置
+  // -------------------------------------------------------------
+  function setupBackupUI() {
+    const mainContainer = document.querySelector('.container') || document.body;
+    if (!mainContainer || document.getElementById('backup-container')) return;
+
+    const backupDiv = document.createElement('div');
+    backupDiv.id = 'backup-container';
+    backupDiv.style.cssText = 'margin: 15px 0; padding: 12px; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;';
+
+    backupDiv.innerHTML = `
+      <span style="font-size: 13px; font-weight: bold; color: #2e7d32;">💾 データ管理・バックアップ</span>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" id="export-json-btn" style="padding: 6px 12px; font-size: 12px; background: #4caf50; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">データ出力(保存)</button>
+        <button type="button" id="import-json-btn" style="padding: 6px 12px; font-size: 12px; background: #2196f3; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">データ読み込み(復元)</button>
+        <input type="file" id="import-json-file" accept=".json" style="display: none;">
+      </div>
+    `;
+
+    const searchSection = document.querySelector('.search-container') || recipeListContainer;
+    if (searchSection) {
+      searchSection.parentNode.insertBefore(backupDiv, searchSection);
+    } else {
+      mainContainer.insertBefore(backupDiv, mainContainer.firstChild);
+    }
+
+    document.getElementById('export-json-btn').addEventListener('click', () => {
+      if (recipes.length === 0) {
+        alert('保存するレシピデータがありません。');
+        return;
+      }
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(recipes, null, 2));
+      const downloadAnchor = document.createElement('a');
+      const today = new Date().toISOString().split('T')[0];
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `recipe_backup_${today}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    });
+
+    const importFileInput = document.getElementById('import-json-file');
+    document.getElementById('import-json-btn').addEventListener('click', () => {
+      importFileInput.click();
+    });
+
+    importFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const importedRecipes = JSON.parse(evt.target.result);
+          if (Array.isArray(importedRecipes)) {
+            if (confirm(`ファイルから ${importedRecipes.length} 件のレシピを復元しますか？（現在のデータは上書き・統合されます）`)) {
+              importedRecipes.forEach(imported => {
+                const idx = recipes.findIndex(r => r.id === imported.id);
+                if (idx > -1) recipes[idx] = imported;
+                else recipes.push(imported);
+              });
+              localStorage.setItem('recipes', JSON.stringify(recipes));
+              renderRecipes();
+              alert('データの復元が完了しました！');
+            }
+          } else {
+            alert('無効なファイルフォーマットです。');
+          }
+        } catch (err) {
+          alert('ファイルの読み込みに失敗しました。');
+          console.error(err);
+        }
+      };
+      reader.readAsText(file);
+      importFileInput.value = '';
+    });
+  }
+
+  setupBackupUI();
+
+  // カテゴリーのデフォルト表示設定
   if (categoryInput) {
-    // 最初の空のoptionがあれば文言を設定、なければ追加
     let defaultOpt = categoryInput.querySelector('option[value=""]');
     if (!defaultOpt) {
       defaultOpt = document.createElement('option');
@@ -67,12 +195,9 @@ document.addEventListener('DOMContentLoaded', () => {
       categoryInput.insertBefore(defaultOpt, categoryInput.firstChild);
     }
     defaultOpt.textContent = 'ジャンルを選択してください';
-    defaultOpt.disabled = false;
   }
 
-  // -------------------------------------------------------------
-  // ① 「+ レシピ追加」ボタンの動的追加とフォーム開閉制御
-  // -------------------------------------------------------------
+  // 「+ レシピ追加」ボタンの開閉制御
   const formContainer = recipeForm ? recipeForm.closest('.form-container') || recipeForm : null;
   let toggleFormBtn = document.getElementById('toggle-form-btn');
 
@@ -83,26 +208,18 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleFormBtn.textContent = '＋ レシピを追加';
     toggleFormBtn.style.cssText = 'width: 100%; padding: 12px; margin-bottom: 16px; font-size: 16px; font-weight: bold; background-color: #ff9800; color: #fff; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.15);';
     
-    // フォームの直前にボタンを挿入
     formContainer.parentNode.insertBefore(toggleFormBtn, formContainer);
-
-    // 最初はフォームを非表示にする
     formContainer.style.display = 'none';
 
     toggleFormBtn.addEventListener('click', () => {
       if (formContainer.style.display === 'none') {
-        formContainer.style.display = 'block';
-        toggleFormBtn.textContent = '✕ フォームを閉じる';
-        toggleFormBtn.style.backgroundColor = '#757575';
+        showForm();
       } else {
-        formContainer.style.display = 'none';
-        toggleFormBtn.textContent = '＋ レシピを追加';
-        toggleFormBtn.style.backgroundColor = '#ff9800';
+        hideForm();
       }
     });
   }
 
-  // フォームを開く関数
   function showForm() {
     if (formContainer) {
       formContainer.style.display = 'block';
@@ -113,7 +230,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // フォームを閉じる関数
   function hideForm() {
     if (formContainer) {
       formContainer.style.display = 'none';
@@ -122,18 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleFormBtn.style.backgroundColor = '#ff9800';
       }
     }
-  }
-
-  // 「何人前」入力欄の生成
-  if (!yieldInput && titleInput) {
-    const yieldDiv = document.createElement('div');
-    yieldDiv.className = 'form-group';
-    yieldDiv.style.cssText = 'margin-bottom: 12px;';
-    yieldDiv.innerHTML = `
-      <label for="yield" style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 4px;">何人前 / 分量 (例: 2人分, 18cm型1個)</label>
-      <input type="text" id="yield" placeholder="例: 2人分" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
-    `;
-    titleInput.parentNode.parentNode.insertBefore(yieldDiv, titleInput.parentNode.nextSibling);
   }
 
   // URL自動リンク化
@@ -208,13 +312,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ファイル読み込み時・自動圧縮処理
   if (imageFileInput) {
     imageFileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = function(event) {
-          currentImageData = event.target.result;
+        reader.onload = async function(event) {
+          currentImageData = await compressImage(event.target.result);
           if (imagePreview) imagePreview.src = currentImageData;
           if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
         };
@@ -232,8 +337,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // 保存処理
   if (recipeForm) {
-    recipeForm.addEventListener('submit', (e) => {
+    recipeForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const id = recipeIdInput.value || Date.now().toString();
@@ -257,6 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const memo = memoInput.value.trim();
 
+      let finalImg = currentImageData;
+      if (finalImg && finalImg.startsWith('data:image')) {
+        finalImg = await compressImage(finalImg);
+      }
+
       const recipeData = {
         id,
         title,
@@ -264,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
         category,
         ingredients,
         steps,
-        image: currentImageData,
+        image: finalImg,
         memo
       };
 
@@ -278,12 +389,12 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         localStorage.setItem('recipes', JSON.stringify(recipes));
       } catch (err) {
-        alert('画像サイズが大きすぎます。小さめの画像を選択してください。');
+        alert('保存領域の限界を超えました。不要なレシピを削除するか軽量な画像をお試しください。');
         return;
       }
 
       resetForm();
-      hideForm(); // 保存後にフォームをたたむ
+      hideForm();
       renderRecipes();
     });
   }
@@ -408,7 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.querySelector('.btn-edit').addEventListener('click', (e) => {
         e.stopPropagation();
         loadRecipeToForm(recipe);
-        showForm(); // 編集時にもフォームを展開する
+        showForm();
       });
 
       card.querySelector('.btn-delete').addEventListener('click', (e) => {
@@ -424,7 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // フォーム読み込み
+// フォーム読み込み
   function loadRecipeToForm(recipe) {
     if (recipeIdInput) recipeIdInput.value = recipe.id || '';
     if (titleInput) titleInput.value = recipe.title || '';
@@ -530,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // -------------------------------------------------------------
   // 外部(ブックマークレット)からのデータ受信用処理
   // -------------------------------------------------------------
-  function checkExternalImport() {
+  async function checkExternalImport() {
     const params = new URLSearchParams(window.location.search);
     const rawData = params.get('import_data');
 
@@ -549,12 +660,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (data.imageUrl) {
-          currentImageData = data.imageUrl;
-          if (imagePreview) imagePreview.src = data.imageUrl;
+          currentImageData = await compressImage(data.imageUrl);
+          if (imagePreview) imagePreview.src = currentImageData;
           if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
         }
 
-        showForm(); // 外部から取り込んだ時は自動的にフォームを開く
+        showForm();
 
         window.history.replaceState({}, document.title, window.location.pathname);
         alert('レシピ情報を自動入力しました！');
