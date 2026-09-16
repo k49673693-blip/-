@@ -661,6 +661,140 @@ document.addEventListener('DOMContentLoaded', () => {
         showForm();
 
         window.history.replaceState({}, document.title, window.location.pathname);
+// フォーム読み込み
+  function loadRecipeToForm(recipe) {
+    if (recipeIdInput) recipeIdInput.value = recipe.id || '';
+    if (titleInput) titleInput.value = recipe.title || '';
+    const yEl = document.getElementById('yield');
+    if (yEl) yEl.value = recipe.recipeYield || '';
+    if (categoryInput) categoryInput.value = recipe.category || '';
+    if (memoInput) memoInput.value = recipe.memo || '';
+
+    if (ingredientsList) ingredientsList.innerHTML = '';
+    if (recipe.ingredients && recipe.ingredients.length > 0) {
+      recipe.ingredients.forEach(i => {
+        if (typeof i === 'string') addIngredientRow(i, '');
+        else addIngredientRow(i.name || '', i.amount || '');
+      });
+    } else {
+      addIngredientRow();
+    }
+
+    if (stepsList) stepsList.innerHTML = '';
+    if (recipe.steps && recipe.steps.length > 0) {
+      recipe.steps.forEach(s => addStepRow(s));
+    } else {
+      addStepRow();
+    }
+
+    currentImageData = recipe.image || '';
+    if (currentImageData && imagePreview && imagePreviewContainer) {
+      imagePreview.src = currentImageData;
+      imagePreviewContainer.style.display = 'flex';
+    } else if (imagePreviewContainer) {
+      imagePreviewContainer.style.display = 'none';
+    }
+
+    const formTitle = document.getElementById('form-title-text');
+    if (formTitle) formTitle.textContent = 'レシピを編集';
+    if (submitBtn) submitBtn.textContent = '変更を更新';
+    if (cancelBtn) cancelBtn.style.display = 'inline-block';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  if (searchKeyword) searchKeyword.addEventListener('input', renderRecipes);
+  if (filterCategory) filterCategory.addEventListener('change', renderRecipes);
+
+  // モーダル処理
+  function openModal(recipe) {
+    if (!recipeModal) return;
+    if (modalTitle) modalTitle.textContent = recipe.title;
+    if (modalCategory) {
+      modalCategory.textContent = recipe.recipeYield ? `${recipe.category || '未設定'} (${recipe.recipeYield})` : (recipe.category || '未設定');
+    }
+
+    if (recipe.image && modalImage) {
+      modalImage.src = recipe.image;
+      modalImage.style.display = 'block';
+    } else if (modalImage) {
+      modalImage.removeAttribute('src');
+      modalImage.style.display = 'none';
+    }
+
+    if (modalIngredients) {
+      modalIngredients.innerHTML = '';
+      if (recipe.ingredients && recipe.ingredients.length > 0) {
+        recipe.ingredients.forEach(ing => {
+          const li = document.createElement('li');
+          if (typeof ing === 'string') {
+            li.innerHTML = `<span class="ing-name">${ing}</span><span class="ing-amount"></span>`;
+          } else {
+            li.innerHTML = `<span class="ing-name">${ing.name || ''}</span><span class="ing-amount">${ing.amount || ''}</span>`;
+          }
+          modalIngredients.appendChild(li);
+        });
+      }
+    }
+
+    if (modalSteps) {
+      modalSteps.innerHTML = '';
+      if (recipe.steps && recipe.steps.length > 0) {
+        recipe.steps.forEach(step => {
+          const li = document.createElement('li');
+          li.textContent = step;
+          modalSteps.appendChild(li);
+        });
+      }
+    }
+
+    if (recipe.memo && modalMemo && modalMemoContainer) {
+      modalMemo.innerHTML = formatMemoText(recipe.memo);
+      modalMemoContainer.style.display = 'block';
+    } else if (modalMemoContainer) {
+      modalMemoContainer.style.display = 'none';
+    }
+
+    recipeModal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+
+  if (modalClose) modalClose.addEventListener('click', () => {
+    recipeModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  });
+
+  // -------------------------------------------------------------
+  // 外部(ブックマークレット)からのデータ受信用処理
+  // -------------------------------------------------------------
+  async function checkExternalImport() {
+    const params = new URLSearchParams(window.location.search);
+    const rawData = params.get('import_data');
+
+    if (rawData) {
+      try {
+        const data = JSON.parse(decodeURIComponent(rawData));
+        
+        loadRecipeToForm({
+          title: data.title || '',
+          recipeYield: data.recipeYield || '',
+          category: '',
+          ingredients: (data.ingredients && data.ingredients.length > 0) ? data.ingredients : [],
+          steps: [],
+          image: '',
+          memo: data.url ? `参照元URL: ${data.url}` : ''
+        });
+
+        if (data.imageUrl) {
+          // 取り込み画像の自動圧縮
+          currentImageData = await compressImage(data.imageUrl);
+          if (imagePreview) imagePreview.src = currentImageData;
+          if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
+        }
+
+        showForm();
+
+        window.history.replaceState({}, document.title, window.location.pathname);
         alert('レシピ情報を自動入力しました！');
       } catch (e) {
         console.error('取り込み失敗:', e);
