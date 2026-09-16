@@ -101,34 +101,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 画像圧縮処理 (最大幅800px / 圧縮率0.8)
+  // 安全な画像圧縮処理 (タイムアウト制御付き)
   function compressImage(srcUrl, maxWidth = 800, quality = 0.8) {
     return new Promise((resolve) => {
+      if (!srcUrl) return resolve('');
+
+      const timeout = setTimeout(() => {
+        resolve(srcUrl); // 処理が重い/固まった場合は元のURLをそのまま返して続行
+      }, 1500);
+
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        let width = img.width;
-        let height = img.height;
+        clearTimeout(timeout);
+        try {
+          let width = img.width;
+          let height = img.height;
 
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          let dataUrl = canvas.toDataURL('image/webp', quality);
+          if (!dataUrl.startsWith('data:image/webp')) {
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+          resolve(dataUrl);
+        } catch (e) {
+          resolve(srcUrl);
         }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        let dataUrl = canvas.toDataURL('image/webp', quality);
-        if (!dataUrl.startsWith('data:image/webp')) {
-          dataUrl = canvas.toDataURL('image/jpeg', quality);
-        }
-        resolve(dataUrl);
       };
-      img.onerror = () => resolve(srcUrl);
+      img.onerror = () => {
+        clearTimeout(timeout);
+        resolve(srcUrl);
+      };
       img.src = srcUrl;
     });
   }
@@ -211,17 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   setupBackupUI();
-
-  // カテゴリーのデフォルト表示設定
-  if (categoryInput) {
-    let defaultOpt = categoryInput.querySelector('option[value=""]');
-    if (!defaultOpt) {
-      defaultOpt = document.createElement('option');
-      defaultOpt.value = '';
-      categoryInput.insertBefore(defaultOpt, categoryInput.firstChild);
-    }
-    defaultOpt.textContent = 'ジャンルを選択してください';
-  }
 
   // URL自動リンク化
   function formatMemoText(text) {
@@ -327,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const id = recipeIdInput.value || Date.now().toString();
       const title = titleInput.value.trim();
-      const yieldVal = document.getElementById('yield')?.value.trim() || '';
+      const yieldVal = yieldInput ? yieldInput.value.trim() : '';
       const category = categoryInput.value;
 
       const ingredientRows = ingredientsList.querySelectorAll('.ingredient-row');
@@ -385,8 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetForm() {
     if (recipeIdInput) recipeIdInput.value = '';
     if (titleInput) titleInput.value = '';
-    const yEl = document.getElementById('yield');
-    if (yEl) yEl.value = '';
+    if (yieldInput) yieldInput.value = '';
     if (categoryInput) categoryInput.value = '';
     if (ingredientsList) ingredientsList.innerHTML = '';
     if (stepsList) stepsList.innerHTML = '';
@@ -518,12 +520,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-// フォーム読み込み
+  // フォーム読み込み
   function loadRecipeToForm(recipe) {
     if (recipeIdInput) recipeIdInput.value = recipe.id || '';
     if (titleInput) titleInput.value = recipe.title || '';
-    const yEl = document.getElementById('yield');
-    if (yEl) yEl.value = recipe.recipeYield || '';
+    if (yieldInput) yieldInput.value = recipe.recipeYield || '';
     if (categoryInput) categoryInput.value = recipe.category || '';
     if (memoInput) memoInput.value = recipe.memo || '';
 
@@ -566,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // モーダル処理
   function openModal(recipe) {
     if (!recipeModal) return;
-    if (modalTitle) modalTitle.textContent = recipe.title;
+    if (modalTitle) modalTitle.textContent = recipe.title || '';
     if (modalCategory) {
       modalCategory.textContent = recipe.recipeYield ? `${recipe.category || '未設定'} (${recipe.recipeYield})` : (recipe.category || '未設定');
     }
@@ -619,6 +620,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (modalClose) modalClose.addEventListener('click', () => {
     recipeModal.style.display = 'none';
     document.body.style.overflow = 'auto';
+  });
+
+  // モーダルの背景クリックで閉じる機能を追加
+  window.addEventListener('click', (e) => {
+    if (e.target === recipeModal) {
+      recipeModal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
   });
 
   // -------------------------------------------------------------
