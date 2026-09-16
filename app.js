@@ -490,171 +490,48 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-    // -------------------------------------------------------------
-  // URL手動入力＆自動解析取り込み機能
-  // -------------------------------------------------------------
-  async function importFromInputUrl() {
-    const urlInput = document.getElementById('url-import-input');
-    if (!urlInput) return;
-
-    let targetUrl = urlInput.value.trim();
-    if (!targetUrl) {
-      alert('URLを入力（貼り付け）してください。');
-      return;
-    }
-
-    // URLの簡易整形（httpがない場合は補完）
-    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
-      targetUrl = 'https://' + targetUrl;
-    }
-
-    alert('レシピデータを読み込んでいます...');
-
-    // タイムアウト付きフェッチ関数 (6秒で切り上げ)
-    const fetchWithTimeout = (url, options = {}, timeout = 6000) => {
-      return Promise.race([
-        fetch(url, options),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('通信タイムアウト')), timeout))
-      ]);
-    };
-
-    let htmlText = '';
-
-    // プロキシ1 (corsproxy.io)
-    try {
-      const proxyUrl1 = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
-      const res = await fetchWithTimeout(proxyUrl1);
-      if (res.ok) htmlText = await res.text();
-    } catch (e) {
-      console.log('Proxy 1 failed...');
-    }
-
-    // プロキシ2 (api.codetabs.com)
-    if (!htmlText) {
-      try {
-        const proxyUrl2 = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl);
-        const res = await fetchWithTimeout(proxyUrl2);
-        if (res.ok) htmlText = await res.text();
-      } catch (e) {
-        console.log('Proxy 2 failed...');
-      }
-    }
-
-    if (!htmlText) {
-      alert('レシピページのデータの取得に失敗しました。URLが正しいか、時間をおいて再度お試しください。');
-      return;
-    }
-
-    try {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(htmlText, 'text/html');
-
-      let importedData = {
-        title: '',
-        ingredients: [],
-        imageUrl: '',
-        url: targetUrl
-      };
-
-      // 1. cotta.jp 解析
-      if (targetUrl.includes('cotta.jp')) {
-        importedData.title = doc.querySelector('.recipe_header_ttl, h1')?.innerText.trim() || doc.title;
-        const img = doc.querySelector('.recipe_main_img img, .main_img img, #recipe_main_image img');
-        if (img) importedData.imageUrl = img.src;
-
-        doc.querySelectorAll('.recipe_ingredients_table tr, .ingredient_table tr').forEach(r => {
-          const name = r.querySelector('.ingredient_name, .name, td:first-child')?.innerText.trim();
-          const amount = r.querySelector('.ingredient_amount, .amount, td:last-child')?.innerText.trim();
-          if (name && name !== '材料') {
+              if (name && name !== '材料') {
             importedData.ingredients.push({ name, amount: amount || '' });
           }
         });
       }
       
-      // 2. cookpad.com 解析
-      if (importedData.ingredients.length === 0 && targetUrl.includes('cookpad.com')) {
-        importedData.title = doc.querySelector('h1.recipe-title, h1')?.innerText.trim() || doc.title;
-        const img = doc.querySelector('#main_photo img, .recipe-main-photo img');
-        if (img) importedData.imageUrl = img.src;
+  // -------------------------------------------------------------
+  // 外部からのデータ受信（POSTパラメータ / GETパラメータ処理）
+  // -------------------------------------------------------------
+  function checkExternalImport() {
+    const params = new URLSearchParams(window.location.search);
+    const importedJson = params.get('import_data');
 
-        const names = doc.querySelectorAll('.ingredient_name');
-        const amounts = doc.querySelectorAll('.ingredient_quantity');
-        names.forEach((n, i) => {
-          if (n.innerText) {
-            importedData.ingredients.push({
-              name: n.innerText.trim(),
-              amount: amounts[i] ? amounts[i].innerText.trim() : ''
-            });
-          }
+    if (importedJson) {
+      try {
+        const data = JSON.parse(decodeURIComponent(importedJson));
+        
+        loadRecipeToForm({
+          title: data.title || '',
+          category: '主菜',
+          ingredients: data.ingredients || [],
+          steps: [],
+          image: '',
+          memo: data.url ? `参照元URL: ${data.url}` : ''
         });
+
+        if (data.imageUrl) {
+          currentImageData = data.imageUrl;
+          if (imagePreview) imagePreview.src = data.imageUrl;
+          if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
+        }
+
+        // URLパラメータをキレイに削除
+        window.history.replaceState({}, document.title, window.location.pathname);
+        alert('レシピデータを取り込みました！');
+      } catch (e) {
+        console.error('取り込みエラー:', e);
       }
-
-      // 3. 共通規格 (JSON-LD) 解析 (汎用)
-      if (importedData.ingredients.length === 0) {
-        const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
-        scripts.forEach(s => {
-          try {
-            let json = JSON.parse(s.innerText);
-            if (Array.isArray(json)) json = json.find(x => x && x['@type'] === 'Recipe');
-            if (json && (json['@type'] === 'Recipe' || (Array.isArray(json['@type']) && json['@type'].includes('Recipe')))) {
-              if (!importedData.title) importedData.title = json.name || doc.title;
-              if (json.image) {
-                importedData.imageUrl = Array.isArray(json.image) ? json.image[0] : (json.image.url || json.image);
-              }
-              if (json.recipeIngredient) {
-                importedData.ingredients = json.recipeIngredient.map(i => {
-                  const p = i.trim().split(/\s+/);
-                  return { name: p[0] || i, amount: p.slice(1).join(' ') || '' };
-                });
-              }
-            }
-          } catch (e) {}
-        });
-      }
-
-      if (!importedData.title) importedData.title = doc.title;
-
-      // フォームへ読み込み
-      loadRecipeToForm({
-        title: importedData.title || '',
-        category: '主菜',
-        ingredients: importedData.ingredients || [],
-        steps: [],
-        image: '',
-        memo: `参照元URL: ${targetUrl}`
-      });
-
-      if (importedData.imageUrl) {
-        currentImageData = importedData.imageUrl;
-        if (imagePreview) imagePreview.src = importedData.imageUrl;
-        if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
-      }
-
-      urlInput.value = ''; // 入力欄クリア
-      alert('タイトル、材料、画像を自動取り込みしました！');
-    } catch (err) {
-      alert('ページの解析に失敗しました。');
-      console.error(err);
     }
   }
 
-  // 「URL入力エリア」を新規レシピフォーム上部に設置
-  const formTitleEl = document.getElementById('form-title');
-  if (formTitleEl && !document.getElementById('url-import-container')) {
-    const container = document.createElement('div');
-    container.id = 'url-import-container';
-    container.style.cssText = 'margin-top: 10px; margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #fff3e0; padding: 10px; border-radius: 6px; border: 1px solid #ffe0b2;';
-
-    container.innerHTML = `
-      <input type="url" id="url-import-input" placeholder="レシピのURLをここに貼り付け" style="flex: 1; min-width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
-      <button type="button" id="url-import-btn" style="padding: 8px 14px; font-size: 13px; background: #ff9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">取り込む</button>
-    `;
-
-    formTitleEl.parentNode.insertBefore(container, formTitleEl.nextSibling);
-
-    document.getElementById('url-import-btn').addEventListener('click', importFromInputUrl);
-  }
-
+  checkExternalImport();
   resetForm();
   renderRecipes();
 });
