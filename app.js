@@ -54,12 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalMemo = document.getElementById('modal-memo');
   const modalMemoContainer = document.getElementById('modal-memo-container');
 
-  /**
-   * テキスト内のURLを強力かつ柔軟にリンクタグ(<a>)に自動変換する関数
-   */
+  // URL自動リンク化
   function formatMemoText(text) {
     if (!text) return '';
-    
     const escaped = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -68,19 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, '&#039;');
 
     const fullUrlRegex = /(https?:\/\/[a-zA-Z0-9.\-_~:/?#[\]@!$&'()*+,;=%]+)/g;
-    const wwwUrlRegex = /(^|[^\w/])(www\.[a-zA-Z0-9.\-_~:/?#[\]@!$&'()*+,;=%]+)/g;
-
-    let result = escaped;
-
-    result = result.replace(fullUrlRegex, (url) => {
+    return escaped.replace(fullUrlRegex, (url) => {
       return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="memo-link">${url}</a>`;
     });
-
-    result = result.replace(wwwUrlRegex, (match, prefix, url) => {
-      return `${prefix}<a href="http://${url}" target="_blank" rel="noopener noreferrer" class="memo-link">${url}</a>`;
-    });
-
-    return result;
   }
 
   // 食材行追加
@@ -93,9 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <input type="text" class="ingredient-amount-input" placeholder="分量 (例: 200g)" value="${amount}">
       <button type="button" class="btn-danger-sm remove-row-btn">削除</button>
     `;
-    div.querySelector('.remove-row-btn').addEventListener('click', () => {
-      div.remove();
-    });
+    div.querySelector('.remove-row-btn').addEventListener('click', () => div.remove());
     ingredientsList.appendChild(div);
   }
 
@@ -105,9 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const stepRows = stepsList.querySelectorAll('.step-row');
     stepRows.forEach((row, index) => {
       const numSpan = row.querySelector('.step-number');
-      if (numSpan) {
-        numSpan.textContent = `手順${index + 1}:`;
-      }
+      if (numSpan) numSpan.textContent = `手順${index + 1}:`;
     });
   }
 
@@ -129,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStepNumbers();
   }
 
-  // ボタンイベント登録
   if (addIngredientBtn) {
     addIngredientBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -144,7 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 画像ファイル読込
   if (imageFileInput) {
     imageFileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -152,8 +133,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const reader = new FileReader();
         reader.onload = function(event) {
           currentImageData = event.target.result;
-          imagePreview.src = currentImageData;
-          imagePreviewContainer.style.display = 'flex';
+          if (imagePreview) imagePreview.src = currentImageData;
+          if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
         };
         reader.readAsDataURL(file);
       }
@@ -169,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // レシピ保存処理
   if (recipeForm) {
     recipeForm.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -246,20 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (cancelBtn) cancelBtn.addEventListener('click', resetForm);
 
-  // 食材絞り込みタグ
-  function addIngredientFilterTag() {
-    if (!ingredientSearchInput) return;
-    const val = ingredientSearchInput.value.trim();
-    if (val !== '') {
-      if (!searchIngredientTags.includes(val)) {
-        searchIngredientTags.push(val);
-        renderIngredientTags();
-        renderRecipes();
-      }
-      ingredientSearchInput.value = '';
-    }
-  }
-
+  // 食材タグ描画
   function renderIngredientTags() {
     if (!ingredientTagsContainer) return;
     ingredientTagsContainer.innerHTML = '';
@@ -279,21 +246,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (addIngredientFilterBtn) {
-    addIngredientFilterBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      addIngredientFilterTag();
-    });
+  function addIngredientFilterTag() {
+    if (!ingredientSearchInput) return;
+    const val = ingredientSearchInput.value.trim();
+    if (val !== '' && !searchIngredientTags.includes(val)) {
+      searchIngredientTags.push(val);
+      renderIngredientTags();
+      renderRecipes();
+      ingredientSearchInput.value = '';
+    }
   }
 
-  if (ingredientSearchInput) {
-    ingredientSearchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addIngredientFilterTag();
-      }
-    });
-  }
+  if (addIngredientFilterBtn) addIngredientFilterBtn.addEventListener('click', addIngredientFilterTag);
 
   // 一覧描画
   function renderRecipes() {
@@ -311,11 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const tagLower = tag.toLowerCase();
         if (!r.ingredients) return false;
         return r.ingredients.some(ing => {
-          if (typeof ing === 'string') {
-            return ing.toLowerCase().includes(tagLower);
-          } else if (ing && ing.name) {
-            return ing.name.toLowerCase().includes(tagLower);
-          }
+          if (typeof ing === 'string') return ing.toLowerCase().includes(tagLower);
+          if (ing && ing.name) return ing.name.toLowerCase().includes(tagLower);
           return false;
         });
       });
@@ -331,7 +292,6 @@ document.addEventListener('DOMContentLoaded', () => {
     filtered.forEach(recipe => {
       const card = document.createElement('div');
       card.className = 'recipe-card';
-
       const imgSrc = recipe.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect width="300" height="200" fill="%23eeeeee"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="20" fill="%23aaa">No Image</text></svg>';
 
       card.innerHTML = `
@@ -347,9 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       card.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-edit') || e.target.classList.contains('btn-delete')) {
-          return;
-        }
+        if (e.target.classList.contains('btn-edit') || e.target.classList.contains('btn-delete')) return;
         openModal(recipe);
       });
 
@@ -371,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 編集データのフォーム読み込み
+  // フォーム読み込み
   function loadRecipeToForm(recipe) {
     if (recipeIdInput) recipeIdInput.value = recipe.id || '';
     if (titleInput) titleInput.value = recipe.title || '';
@@ -381,11 +339,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ingredientsList) ingredientsList.innerHTML = '';
     if (recipe.ingredients && recipe.ingredients.length > 0) {
       recipe.ingredients.forEach(i => {
-        if (typeof i === 'string') {
-          addIngredientRow(i, '');
-        } else {
-          addIngredientRow(i.name || '', i.amount || '');
-        }
+        if (typeof i === 'string') addIngredientRow(i, '');
+        else addIngredientRow(i.name || '', i.amount || '');
       });
     } else {
       addIngredientRow();
@@ -439,10 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (typeof ing === 'string') {
             li.innerHTML = `<span class="ing-name">${ing}</span><span class="ing-amount"></span>`;
           } else {
-            li.innerHTML = `
-              <span class="ing-name">${ing.name || ''}</span>
-              <span class="ing-amount">${ing.amount || ''}</span>
-            `;
+            li.innerHTML = `<span class="ing-name">${ing.name || ''}</span><span class="ing-amount">${ing.amount || ''}</span>`;
           }
           modalIngredients.appendChild(li);
         });
@@ -463,13 +415,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (recipe.memo && modalMemo && modalMemoContainer) {
       modalMemo.innerHTML = formatMemoText(recipe.memo);
       modalMemoContainer.style.display = 'block';
-
-      const links = modalMemo.querySelectorAll('.memo-link');
-      links.forEach(link => {
-        const stopProp = (e) => e.stopPropagation();
-        link.addEventListener('click', stopProp);
-        link.addEventListener('touchend', stopProp);
-      });
     } else if (modalMemoContainer) {
       modalMemoContainer.style.display = 'none';
     }
@@ -478,34 +423,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.style.overflow = 'hidden';
   }
 
-  function closeModal() {
-    if (recipeModal) recipeModal.style.display = 'none';
+  if (modalClose) modalClose.addEventListener('click', () => {
+    recipeModal.style.display = 'none';
     document.body.style.overflow = 'auto';
-  }
+  });
 
-  if (modalClose) modalClose.addEventListener('click', closeModal);
-  if (recipeModal) {
-    recipeModal.addEventListener('click', (e) => {
-      if (e.target === recipeModal) closeModal();
-    });
-  }
-
-              if (name && name !== '材料') {
-            importedData.ingredients.push({ name, amount: amount || '' });
-          }
-        });
-      }
-      
   // -------------------------------------------------------------
-  // 外部からのデータ受信（POSTパラメータ / GETパラメータ処理）
+  // 外部(ブックマークレット)からのデータ受信用処理
   // -------------------------------------------------------------
   function checkExternalImport() {
     const params = new URLSearchParams(window.location.search);
-    const importedJson = params.get('import_data');
+    const rawData = params.get('import_data');
 
-    if (importedJson) {
+    if (rawData) {
       try {
-        const data = JSON.parse(decodeURIComponent(importedJson));
+        const data = JSON.parse(decodeURIComponent(rawData));
         
         loadRecipeToForm({
           title: data.title || '',
@@ -522,16 +454,16 @@ document.addEventListener('DOMContentLoaded', () => {
           if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
         }
 
-        // URLパラメータをキレイに削除
+        // URLパラメータをクリア
         window.history.replaceState({}, document.title, window.location.pathname);
-        alert('レシピデータを取り込みました！');
+        alert('レシピ情報を自動入力しました！');
       } catch (e) {
-        console.error('取り込みエラー:', e);
+        console.error('取り込み失敗:', e);
       }
     }
   }
 
-  checkExternalImport();
   resetForm();
   renderRecipes();
+  checkExternalImport();
 });
