@@ -490,30 +490,64 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+    // -------------------------------------------------------------
+  // URL手動入力＆自動解析取り込み機能
   // -------------------------------------------------------------
-  // クリップボードURLからの自動解析・取り込み機能
-  // -------------------------------------------------------------
-  async function importFromClipboardUrl() {
+  async function importFromInputUrl() {
+    const urlInput = document.getElementById('url-import-input');
+    if (!urlInput) return;
+
+    let targetUrl = urlInput.value.trim();
+    if (!targetUrl) {
+      alert('URLを入力（貼り付け）してください。');
+      return;
+    }
+
+    // URLの簡易整形（httpがない場合は補完）
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      targetUrl = 'https://' + targetUrl;
+    }
+
+    alert('レシピデータを読み込んでいます...');
+
+    // タイムアウト付きフェッチ関数 (6秒で切り上げ)
+    const fetchWithTimeout = (url, options = {}, timeout = 6000) => {
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('通信タイムアウト')), timeout))
+      ]);
+    };
+
+    let htmlText = '';
+
+    // プロキシ1 (corsproxy.io)
     try {
-      const text = await navigator.clipboard.readText();
-      if (!text || (!text.startsWith('http://') && !text.startsWith('https://'))) {
-        alert('クリップボードにレシピページのURLが見つかりませんでした。WebサイトでURLをコピーしてから押してください。');
-        return;
+      const proxyUrl1 = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+      const res = await fetchWithTimeout(proxyUrl1);
+      if (res.ok) htmlText = await res.text();
+    } catch (e) {
+      console.log('Proxy 1 failed...');
+    }
+
+    // プロキシ2 (api.codetabs.com)
+    if (!htmlText) {
+      try {
+        const proxyUrl2 = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl);
+        const res = await fetchWithTimeout(proxyUrl2);
+        if (res.ok) htmlText = await res.text();
+      } catch (e) {
+        console.log('Proxy 2 failed...');
       }
+    }
 
-      const targetUrl = text.trim();
-      alert('URLを検出しました。レシピデータを読み込んでいます...');
+    if (!htmlText) {
+      alert('レシピページのデータの取得に失敗しました。URLが正しいか、時間をおいて再度お試しください。');
+      return;
+    }
 
-      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl);
-      const res = await fetch(proxyUrl);
-      const data = await res.json();
-      
-      if (!data.contents) {
-        throw new Error('ページの取得に失敗しました');
-      }
-
+    try {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(data.contents, 'text/html');
+      const doc = parser.parseFromString(htmlText, 'text/html');
 
       let importedData = {
         title: '',
@@ -555,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
 
-      // 3. 共通規格 (JSON-LD) 解析 (汎用フォールバック)
+      // 3. 共通規格 (JSON-LD) 解析 (汎用)
       if (importedData.ingredients.length === 0) {
         const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
         scripts.forEach(s => {
@@ -580,7 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!importedData.title) importedData.title = doc.title;
 
-      // フォームへ読み込み（手順は空）
+      // フォームへ読み込み
       loadRecipeToForm({
         title: importedData.title || '',
         category: '主菜',
@@ -596,23 +630,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
       }
 
-      alert('タイトル、材料、画像を自動取り込みしました！確認して保存してください。');
+      urlInput.value = ''; // 入力欄クリア
+      alert('タイトル、材料、画像を自動取り込みしました！');
     } catch (err) {
-      alert('自動読み込みに失敗しました。URLが正しいかご確認ください。');
+      alert('ページの解析に失敗しました。');
       console.error(err);
     }
   }
 
-  // 「取り込む」ボタンをフォーム上部に設置
+  // 「URL入力エリア」を新規レシピフォーム上部に設置
   const formTitleEl = document.getElementById('form-title');
-  if (formTitleEl && !document.getElementById('clip-import-btn')) {
-    const importBtn = document.createElement('button');
-    importBtn.id = 'clip-import-btn';
-    importBtn.type = 'button';
-    importBtn.textContent = '📋 URLから自動取り込み';
-    importBtn.style.cssText = 'margin-left: 12px; padding: 6px 12px; font-size: 13px; background: #ff9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;';
-    importBtn.addEventListener('click', importFromClipboardUrl);
-    formTitleEl.appendChild(importBtn);
+  if (formTitleEl && !document.getElementById('url-import-container')) {
+    const container = document.createElement('div');
+    container.id = 'url-import-container';
+    container.style.cssText = 'margin-top: 10px; margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #fff3e0; padding: 10px; border-radius: 6px; border: 1px solid #ffe0b2;';
+
+    container.innerHTML = `
+      <input type="url" id="url-import-input" placeholder="レシピのURLをここに貼り付け" style="flex: 1; min-width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+      <button type="button" id="url-import-btn" style="padding: 8px 14px; font-size: 13px; background: #ff9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">取り込む</button>
+    `;
+
+    formTitleEl.parentNode.insertBefore(container, formTitleEl.nextSibling);
+
+    document.getElementById('url-import-btn').addEventListener('click', importFromInputUrl);
   }
 
   resetForm();
