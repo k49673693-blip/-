@@ -55,10 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalMemoContainer = document.getElementById('modal-memo-container');
 
   // -------------------------------------------------------------
-  // 何人前入力欄の動的生成（フォーム内部への配置）
+  // 何人前入力欄を form 内部へ配置（外に溢れていた既存要素があれば削除）
   // -------------------------------------------------------------
   let yieldInput = document.getElementById('yield');
-  if (!yieldInput && titleInput) {
+  if (!yieldInput && titleInput && recipeForm) {
     const titleGroup = titleInput.closest('.form-group') || titleInput.parentNode;
     const yieldDiv = document.createElement('div');
     yieldDiv.className = 'form-group';
@@ -69,6 +69,58 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     titleGroup.parentNode.insertBefore(yieldDiv, titleGroup.nextSibling);
     yieldInput = document.getElementById('yield');
+  } else if (yieldInput && recipeForm && !recipeForm.contains(yieldInput)) {
+    // 既存のyieldInputがformの外にある場合はform内のタイトルの下に移動
+    const titleGroup = titleInput.closest('.form-group') || titleInput.parentNode;
+    const yieldGroup = yieldInput.closest('.form-group') || yieldInput.parentNode;
+    titleGroup.parentNode.insertBefore(yieldGroup, titleGroup.nextSibling);
+  }
+
+  // -------------------------------------------------------------
+  // 「+ レシピを追加」ボタンの設置とフォーム開閉制御
+  // -------------------------------------------------------------
+  let toggleFormBtn = document.getElementById('toggle-form-btn');
+
+  if (!toggleFormBtn && recipeForm) {
+    toggleFormBtn = document.createElement('button');
+    toggleFormBtn.id = 'toggle-form-btn';
+    toggleFormBtn.type = 'button';
+    toggleFormBtn.textContent = '＋ レシピを追加';
+    toggleFormBtn.style.cssText = 'width: 100%; padding: 12px; margin-bottom: 16px; font-size: 16px; font-weight: bold; background-color: #ff9800; color: #fff; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.15);';
+    
+    // formの直前にボタンを配置
+    recipeForm.parentNode.insertBefore(toggleFormBtn, recipeForm);
+    recipeForm.style.display = 'none'; // 初期状態は非表示
+
+    toggleFormBtn.addEventListener('click', () => {
+      if (recipeForm.style.display === 'none') {
+        showForm();
+      } else {
+        hideForm();
+      }
+    });
+  } else if (recipeForm) {
+    recipeForm.style.display = 'none';
+  }
+
+  function showForm() {
+    if (recipeForm) {
+      recipeForm.style.display = 'block';
+      if (toggleFormBtn) {
+        toggleFormBtn.textContent = '✕ フォームを閉じる';
+        toggleFormBtn.style.backgroundColor = '#757575';
+      }
+    }
+  }
+
+  function hideForm() {
+    if (recipeForm) {
+      recipeForm.style.display = 'none';
+      if (toggleFormBtn) {
+        toggleFormBtn.textContent = '＋ レシピを追加';
+        toggleFormBtn.style.backgroundColor = '#ff9800';
+      }
+    }
   }
 
   // -------------------------------------------------------------
@@ -195,49 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
       categoryInput.insertBefore(defaultOpt, categoryInput.firstChild);
     }
     defaultOpt.textContent = 'ジャンルを選択してください';
-  }
-
-  // 「+ レシピ追加」ボタンの開閉制御
-  const formContainer = recipeForm ? recipeForm.closest('.form-container') || recipeForm : null;
-  let toggleFormBtn = document.getElementById('toggle-form-btn');
-
-  if (!toggleFormBtn && formContainer) {
-    toggleFormBtn = document.createElement('button');
-    toggleFormBtn.id = 'toggle-form-btn';
-    toggleFormBtn.type = 'button';
-    toggleFormBtn.textContent = '＋ レシピを追加';
-    toggleFormBtn.style.cssText = 'width: 100%; padding: 12px; margin-bottom: 16px; font-size: 16px; font-weight: bold; background-color: #ff9800; color: #fff; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.15);';
-    
-    formContainer.parentNode.insertBefore(toggleFormBtn, formContainer);
-    formContainer.style.display = 'none';
-
-    toggleFormBtn.addEventListener('click', () => {
-      if (formContainer.style.display === 'none') {
-        showForm();
-      } else {
-        hideForm();
-      }
-    });
-  }
-
-  function showForm() {
-    if (formContainer) {
-      formContainer.style.display = 'block';
-      if (toggleFormBtn) {
-        toggleFormBtn.textContent = '✕ フォームを閉じる';
-        toggleFormBtn.style.backgroundColor = '#757575';
-      }
-    }
-  }
-
-  function hideForm() {
-    if (formContainer) {
-      formContainer.style.display = 'none';
-      if (toggleFormBtn) {
-        toggleFormBtn.textContent = '＋ レシピを追加';
-        toggleFormBtn.style.backgroundColor = '#ff9800';
-      }
-    }
   }
 
   // URL自動リンク化
@@ -462,7 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (addIngredientFilterBtn) addIngredientFilterBtn.addEventListener('click', addIngredientFilterTag);
 
-  // 一覧描画
+// 一覧描画
   function renderRecipes() {
     if (!recipeListContainer) return;
     recipeListContainer.innerHTML = '';
@@ -535,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-// フォーム読み込み
+  // フォーム読み込み
   function loadRecipeToForm(recipe) {
     if (recipeIdInput) recipeIdInput.value = recipe.id || '';
     if (titleInput) titleInput.value = recipe.title || '';
