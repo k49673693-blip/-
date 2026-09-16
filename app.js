@@ -470,11 +470,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   resetForm();
   renderRecipes();
-
-    // -------------------------------------------------------------
+  // -------------------------------------------------------------
   // 外部サイトから「タイトル・材料・画像・URL」を取り込む処理
   // -------------------------------------------------------------
-  function checkExternalImport() {
+  async function checkExternalImport() {
     const hash = window.location.hash;
     if (hash && hash.startsWith('#import=')) {
       try {
@@ -486,16 +485,21 @@ document.addEventListener('DOMContentLoaded', () => {
             title: importedData.title || '',
             category: '主菜',
             ingredients: importedData.ingredients || [],
-            steps: [], // 手順は取り込まない
-            image: importedData.image || '',
+            steps: [], // 手順はスキップ
+            image: '',
             memo: importedData.url ? `参照元URL: ${importedData.url}` : ''
           });
 
-          // 画像がURL形式で渡された場合プレビューを表示
-          if (importedData.image) {
-            currentImageData = importedData.image;
-            imagePreview.src = importedData.image;
-            imagePreviewContainer.style.display = 'flex';
+          // 画像URLが渡された場合、アプリ側で取得してプレビュー表示
+          if (importedData.imageUrl) {
+            try {
+              // 外部画像URLをアプリ側で読み込み
+              currentImageData = importedData.imageUrl;
+              imagePreview.src = importedData.imageUrl;
+              imagePreviewContainer.style.display = 'flex';
+            } catch (imgErr) {
+              console.log('Image load skipped:', imgErr);
+            }
           }
 
           history.replaceState(null, null, ' ');
