@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const recipeForm = document.getElementById('recipe-form');
   const recipeIdInput = document.getElementById('recipe-id');
   const titleInput = document.getElementById('title');
+  const yieldInput = document.getElementById('yield'); // 何人前入力欄
   const categoryInput = document.getElementById('category');
   const ingredientsList = document.getElementById('ingredients-list');
   const stepsList = document.getElementById('steps-list');
@@ -48,11 +49,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalClose = document.getElementById('modal-close');
   const modalImage = document.getElementById('modal-image');
   const modalTitle = document.getElementById('modal-title');
+  const modalYield = document.getElementById('modal-yield'); // モーダルの何人前表示
   const modalCategory = document.getElementById('modal-category');
   const modalIngredients = document.getElementById('modal-ingredients');
   const modalSteps = document.getElementById('modal-steps');
   const modalMemo = document.getElementById('modal-memo');
   const modalMemoContainer = document.getElementById('modal-memo-container');
+
+  // フォームに「何人前」入力欄がない場合は動的に追加
+  if (!yieldInput && titleInput) {
+    const yieldDiv = document.createElement('div');
+    yieldDiv.className = 'form-group';
+    yieldDiv.style.cssText = 'margin-bottom: 12px;';
+    yieldDiv.innerHTML = `
+      <label for="yield" style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 4px;">何人前 / 分量 (例: 2人分, 18cm型1個)</label>
+      <input type="text" id="yield" placeholder="例: 2人分" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+    `;
+    titleInput.parentNode.parentNode.insertBefore(yieldDiv, titleInput.parentNode.nextSibling);
+  }
 
   // URL自動リンク化
   function formatMemoText(text) {
@@ -156,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const id = recipeIdInput.value || Date.now().toString();
       const title = titleInput.value.trim();
+      const yieldVal = document.getElementById('yield')?.value.trim() || '';
       const category = categoryInput.value;
 
       const ingredientRows = ingredientsList.querySelectorAll('.ingredient-row');
@@ -177,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const recipeData = {
         id,
         title,
+        recipeYield: yieldVal,
         category,
         ingredients,
         steps,
@@ -206,6 +222,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetForm() {
     if (recipeIdInput) recipeIdInput.value = '';
     if (titleInput) titleInput.value = '';
+    const yEl = document.getElementById('yield');
+    if (yEl) yEl.value = '';
     if (categoryInput) categoryInput.value = '主菜';
     if (ingredientsList) ingredientsList.innerHTML = '';
     if (stepsList) stepsList.innerHTML = '';
@@ -294,10 +312,12 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'recipe-card';
       const imgSrc = recipe.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect width="300" height="200" fill="%23eeeeee"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="20" fill="%23aaa">No Image</text></svg>';
 
+      const yieldBadge = recipe.recipeYield ? `<span class="badge" style="background:#8bc34a; margin-left:4px;">${recipe.recipeYield}</span>` : '';
+
       card.innerHTML = `
         <img src="${imgSrc}" class="card-img" alt="${recipe.title}">
         <div class="card-content">
-          <span class="badge">${recipe.category || '未設定'}</span>
+          <span class="badge">${recipe.category || '未設定'}</span>${yieldBadge}
           <div class="card-title">${recipe.title}</div>
           <div class="card-actions">
             <button type="button" class="btn-edit">編集</button>
@@ -333,6 +353,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadRecipeToForm(recipe) {
     if (recipeIdInput) recipeIdInput.value = recipe.id || '';
     if (titleInput) titleInput.value = recipe.title || '';
+    const yEl = document.getElementById('yield');
+    if (yEl) yEl.value = recipe.recipeYield || '';
     if (categoryInput) categoryInput.value = recipe.category || '主菜';
     if (memoInput) memoInput.value = recipe.memo || '';
 
@@ -376,7 +398,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function openModal(recipe) {
     if (!recipeModal) return;
     if (modalTitle) modalTitle.textContent = recipe.title;
-    if (modalCategory) modalCategory.textContent = recipe.category || '未設定';
+    if (modalCategory) {
+      modalCategory.textContent = recipe.recipeYield ? `${recipe.category || '未設定'} (${recipe.recipeYield})` : (recipe.category || '未設定');
+    }
 
     if (recipe.image && modalImage) {
       modalImage.src = recipe.image;
@@ -429,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // -------------------------------------------------------------
-  // 外部(ブックマークレット)からのデータ受信用処理（画像＆材料強化版）
+  // 外部(ブックマークレット)からのデータ受信用処理
   // -------------------------------------------------------------
   function checkExternalImport() {
     const params = new URLSearchParams(window.location.search);
@@ -441,6 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         loadRecipeToForm({
           title: data.title || '',
+          recipeYield: data.recipeYield || '',
           category: '主菜',
           ingredients: (data.ingredients && data.ingredients.length > 0) ? data.ingredients : [],
           steps: [],
@@ -448,16 +473,14 @@ document.addEventListener('DOMContentLoaded', () => {
           memo: data.url ? `参照元URL: ${data.url}` : ''
         });
 
-        // 画像URLのセット処理
         if (data.imageUrl) {
           currentImageData = data.imageUrl;
           if (imagePreview) imagePreview.src = data.imageUrl;
           if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
         }
 
-        // URLパラメータを削除して綺麗にする
         window.history.replaceState({}, document.title, window.location.pathname);
-        alert('レシピ情報を読み込みました！');
+        alert('レシピ情報を自動入力しました！');
       } catch (e) {
         console.error('取り込み失敗:', e);
       }
