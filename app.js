@@ -518,7 +518,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       recipeListContainer.appendChild(card);
     });
-  }
+            }
+
 
   // フォーム読み込み
   function loadRecipeToForm(recipe) {
