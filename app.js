@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const recipeForm = document.getElementById('recipe-form');
   const recipeIdInput = document.getElementById('recipe-id');
   const titleInput = document.getElementById('title');
+  const yieldInput = document.getElementById('yield');
   const categoryInput = document.getElementById('category');
   const ingredientsList = document.getElementById('ingredients-list');
   const stepsList = document.getElementById('steps-list');
@@ -55,28 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalMemoContainer = document.getElementById('modal-memo-container');
 
   // -------------------------------------------------------------
-  // 何人前入力欄を form 内部へ配置（外に溢れていた既存要素があれば削除）
-  // -------------------------------------------------------------
-  let yieldInput = document.getElementById('yield');
-  if (!yieldInput && titleInput && recipeForm) {
-    const titleGroup = titleInput.closest('.form-group') || titleInput.parentNode;
-    const yieldDiv = document.createElement('div');
-    yieldDiv.className = 'form-group';
-    yieldDiv.style.cssText = 'margin-bottom: 12px;';
-    yieldDiv.innerHTML = `
-      <label for="yield" style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 4px;">何人前 / 分量 (例: 2人分, 18cm型1個)</label>
-      <input type="text" id="yield" placeholder="例: 2人分" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
-    `;
-    titleGroup.parentNode.insertBefore(yieldDiv, titleGroup.nextSibling);
-    yieldInput = document.getElementById('yield');
-  } else if (yieldInput && recipeForm && !recipeForm.contains(yieldInput)) {
-    // 既存のyieldInputがformの外にある場合はform内のタイトルの下に移動
-    const titleGroup = titleInput.closest('.form-group') || titleInput.parentNode;
-    const yieldGroup = yieldInput.closest('.form-group') || yieldInput.parentNode;
-    titleGroup.parentNode.insertBefore(yieldGroup, titleGroup.nextSibling);
-  }
-
-  // -------------------------------------------------------------
   // 「+ レシピを追加」ボタンの設置とフォーム開閉制御
   // -------------------------------------------------------------
   let toggleFormBtn = document.getElementById('toggle-form-btn');
@@ -88,9 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleFormBtn.textContent = '＋ レシピを追加';
     toggleFormBtn.style.cssText = 'width: 100%; padding: 12px; margin-bottom: 16px; font-size: 16px; font-weight: bold; background-color: #ff9800; color: #fff; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.15);';
     
-    // formの直前にボタンを配置
     recipeForm.parentNode.insertBefore(toggleFormBtn, recipeForm);
-    recipeForm.style.display = 'none'; // 初期状態は非表示
+    recipeForm.style.display = 'none';
 
     toggleFormBtn.addEventListener('click', () => {
       if (recipeForm.style.display === 'none') {
@@ -123,9 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // -------------------------------------------------------------
-  // 画像の自動軽量化・リサイズ処理 (最大幅800px / 圧縮率0.8)
-  // -------------------------------------------------------------
+  // 画像圧縮処理 (最大幅800px / 圧縮率0.8)
   function compressImage(srcUrl, maxWidth = 800, quality = 0.8) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -157,9 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // -------------------------------------------------------------
-  // バックアップ (JSONエクスポート / インポート) 機能 UI設置
-  // -------------------------------------------------------------
+  // バックアップ UI設置
   function setupBackupUI() {
     const mainContainer = document.querySelector('.container') || document.body;
     if (!mainContainer || document.getElementById('backup-container')) return;
@@ -471,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (addIngredientFilterBtn) addIngredientFilterBtn.addEventListener('click', addIngredientFilterTag);
 
-// 一覧描画
+  // 一覧描画
   function renderRecipes() {
     if (!recipeListContainer) return;
     recipeListContainer.innerHTML = '';
@@ -544,7 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // フォーム読み込み
+// フォーム読み込み
   function loadRecipeToForm(recipe) {
     if (recipeIdInput) recipeIdInput.value = recipe.id || '';
     if (titleInput) titleInput.value = recipe.title || '';
