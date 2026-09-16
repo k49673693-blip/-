@@ -429,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // -------------------------------------------------------------
-  // 外部(ブックマークレット)からのデータ受信用処理
+  // 外部(ブックマークレット)からのデータ受信用処理（画像＆材料強化版）
   // -------------------------------------------------------------
   function checkExternalImport() {
     const params = new URLSearchParams(window.location.search);
@@ -442,21 +442,22 @@ document.addEventListener('DOMContentLoaded', () => {
         loadRecipeToForm({
           title: data.title || '',
           category: '主菜',
-          ingredients: data.ingredients || [],
+          ingredients: (data.ingredients && data.ingredients.length > 0) ? data.ingredients : [],
           steps: [],
           image: '',
           memo: data.url ? `参照元URL: ${data.url}` : ''
         });
 
+        // 画像URLのセット処理
         if (data.imageUrl) {
           currentImageData = data.imageUrl;
           if (imagePreview) imagePreview.src = data.imageUrl;
           if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
         }
 
-        // URLパラメータをクリア
+        // URLパラメータを削除して綺麗にする
         window.history.replaceState({}, document.title, window.location.pathname);
-        alert('レシピ情報を自動入力しました！');
+        alert('レシピ情報を読み込みました！');
       } catch (e) {
         console.error('取り込み失敗:', e);
       }
