@@ -471,49 +471,126 @@ document.addEventListener('DOMContentLoaded', () => {
   resetForm();
   renderRecipes();
     // -------------------------------------------------------------
-  // クリップボード／ハッシュからのレシピ取り込み処理
+  // クリップボードのURLからレシピ情報（タイトル・材料・画像）を取得・自動解析
   // -------------------------------------------------------------
-  async function checkExternalImport() {
-    const hash = window.location.hash;
-    
-    // クリップボードからの読み込みフラグがある場合
-    if (hash === '#paste' || hash.startsWith('#import=')) {
-      history.replaceState(null, null, ' '); // ハッシュ消去
-
-      try {
-        let textData = '';
-
-        if (hash === '#paste') {
-          // クリップボードからデータを取得
-          textData = await navigator.clipboard.readText();
-        } else {
-          textData = decodeURIComponent(hash.substring(8));
-        }
-
-        const importedData = JSON.parse(textData);
-
-        if (importedData) {
-          loadRecipeToForm({
-            title: importedData.title || '',
-            category: '主菜',
-            ingredients: importedData.ingredients || [],
-            steps: [], // 手順は取り込まない
-            image: '',
-            memo: importedData.url ? `参照元URL: ${importedData.url}` : ''
-          });
-
-          // 画像URLがセットされている場合プレビュー表示
-          if (importedData.imageUrl) {
-            currentImageData = importedData.imageUrl;
-            imagePreview.src = importedData.imageUrl;
-            imagePreviewContainer.style.display = 'flex';
-          }
-
-          alert('レシピ情報を読み込みました！内容を確認して保存してください。');
-        }
-      } catch (err) {
-        alert('データの自動読み込みに失敗しました。フォームの上部に手動で貼り付けてください。');
-        console.error('Import error:', err);
+  async function importFromClipboardUrl() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text || (!text.startsWith('http://') && !text.startsWith('https://'))) {
+        alert('クリップボードに有効なレシピURLが見つかりませんでした。URLをコピーしてからお試しください。');
+        return;
       }
+
+      const targetUrl = text.trim();
+      alert('URLを検出しました。レシピデータを読み込んでいます...');
+
+      // CORS回避用プロキシを介してHTMLを取得
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl);
+      const res = await fetch(proxyUrl);
+      const data = await res.json();
+      
+      if (!data.contents) {
+        throw new Error('ページの取得に失敗しました');
+      }
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data.contents, 'text/html');
+
+      let importedData = {
+        title: '',
+        ingredients: [],
+        imageUrl: '',
+        url: targetUrl
+      };
+
+      // 1. cotta.jp の解析
+      if (targetUrl.includes('cotta.jp')) {
+        importedData.title = doc.querySelector('.recipe_header_ttl, h1')?.innerText.trim() || doc.title;
+        const img = doc.querySelector('.recipe_main_img img, .main_img img, #recipe_main_image img');
+        if (img) importedData.imageUrl = img.src;
+
+        doc.querySelectorAll('.recipe_ingredients_table tr, .ingredient_table tr').forEach(r => {
+          const name = r.querySelector('.ingredient_name, .name, td:first-child')?.innerText.trim();
+          const amount = r.querySelector('.ingredient_amount, .amount, td:last-child')?.innerText.trim();
+          if (name && name !== '材料') {
+            importedData.ingredients.push({ name, amount: amount || '' });
+          }
+        });
+      }
+      
+      // 2. cookpad.com の解析
+      if (importedData.ingredients.length === 0 && targetUrl.includes('cookpad.com')) {
+        importedData.title = doc.querySelector('h1.recipe-title, h1')?.innerText.trim() || doc.title;
+        const img = doc.querySelector('#main_photo img, .recipe-main-photo img');
+        if (img) importedData.imageUrl = img.src;
+
+        const names = doc.querySelectorAll('.ingredient_name');
+        const amounts = doc.querySelectorAll('.ingredient_quantity');
+        names.forEach((n, i) => {
+          if (n.innerText) {
+            importedData.ingredients.push({
+              name: n.innerText.trim(),
+              amount: amounts[i] ? amounts[i].innerText.trim() : ''
+            });
+          }
+        });
+      }
+
+      // 3. 共通規格 (JSON-LD) 解析 (汎用フォールバック)
+      if (importedData.ingredients.length === 0) {
+        const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+        scripts.forEach(s => {
+          try {
+            let json = JSON.parse(s.innerText);
+            if (Array.isArray(json)) json = json.find(x => x && x['@type'] === 'Recipe');
+            if (json && (json['@type'] === 'Recipe' || (Array.isArray(json['@type']) && json['@type'].includes('Recipe')))) {
+              if (!importedData.title) importedData.title = json.name || doc.title;
+              if (json.image) {
+                importedData.imageUrl = Array.isArray(json.image) ? json.image[0] : (json.image.url || json.image);
+              }
+              if (json.recipeIngredient) {
+                importedData.ingredients = json.recipeIngredient.map(i => {
+                  const p = i.trim().split(/\s+/);
+                  return { name: p[0] || i, amount: p.slice(1).join(' ') || '' };
+                });
+              }
+            }
+          } catch (e) {}
+        });
+      }
+
+      if (!importedData.title) importedData.title = doc.title;
+
+      // フォームへ反映
+      loadRecipeToForm({
+        title: importedData.title || '',
+        category: '主菜',
+        ingredients: importedData.ingredients || [],
+        steps: [], // 手順は取得しない
+        image: '',
+        memo: `参照元URL: ${targetUrl}`
+      });
+
+      if (importedData.imageUrl) {
+        currentImageData = importedData.imageUrl;
+        imagePreview.src = importedData.imageUrl;
+        imagePreviewContainer.style.display = 'flex';
+      }
+
+      alert('レシピ情報を自動取り込みしました！');
+    } catch (err) {
+      alert('読み込みに失敗しました。URLが正しいかご確認ください。');
+      console.error(err);
     }
+  }
+
+  // 画面上に「URLから取り込む」ボタンを設置する処理
+  const formTitle = document.getElementById('form-title');
+  if (formTitle) {
+    const importBtn = document.createElement('button');
+    importBtn.type = 'button';
+    importBtn.textContent = '📋 コピーしたURLから取り込む';
+    importBtn.style.cssText = 'margin-left: 10px; padding: 6px 12px; font-size: 12px; background: #ff9800; color: #fff; border: none; border-radius: 4px; cursor: pointer;';
+    importBtn.addEventListener('click', importFromClipboardUrl);
+    formTitle.appendChild(importBtn);
   }
