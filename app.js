@@ -470,42 +470,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   resetForm();
   renderRecipes();
-  // -------------------------------------------------------------
-  // 外部サイトから「タイトル・材料・画像・URL」を取り込む処理
+    // -------------------------------------------------------------
+  // クリップボード／ハッシュからのレシピ取り込み処理
   // -------------------------------------------------------------
   async function checkExternalImport() {
     const hash = window.location.hash;
-    if (hash && hash.startsWith('#import=')) {
+    
+    // クリップボードからの読み込みフラグがある場合
+    if (hash === '#paste' || hash.startsWith('#import=')) {
+      history.replaceState(null, null, ' '); // ハッシュ消去
+
       try {
-        const rawData = decodeURIComponent(hash.substring(8));
-        const importedData = JSON.parse(rawData);
+        let textData = '';
+
+        if (hash === '#paste') {
+          // クリップボードからデータを取得
+          textData = await navigator.clipboard.readText();
+        } else {
+          textData = decodeURIComponent(hash.substring(8));
+        }
+
+        const importedData = JSON.parse(textData);
 
         if (importedData) {
           loadRecipeToForm({
             title: importedData.title || '',
             category: '主菜',
             ingredients: importedData.ingredients || [],
-            steps: [], // 手順はスキップ
+            steps: [], // 手順は取り込まない
             image: '',
             memo: importedData.url ? `参照元URL: ${importedData.url}` : ''
           });
 
-          // 画像URLが渡された場合、アプリ側で取得してプレビュー表示
+          // 画像URLがセットされている場合プレビュー表示
           if (importedData.imageUrl) {
-            try {
-              // 外部画像URLをアプリ側で読み込み
-              currentImageData = importedData.imageUrl;
-              imagePreview.src = importedData.imageUrl;
-              imagePreviewContainer.style.display = 'flex';
-            } catch (imgErr) {
-              console.log('Image load skipped:', imgErr);
-            }
+            currentImageData = importedData.imageUrl;
+            imagePreview.src = importedData.imageUrl;
+            imagePreviewContainer.style.display = 'flex';
           }
 
-          history.replaceState(null, null, ' ');
-          alert('タイトル、材料、画像、参照URLを取り込みました！');
+          alert('レシピ情報を読み込みました！内容を確認して保存してください。');
         }
       } catch (err) {
+        alert('データの自動読み込みに失敗しました。フォームの上部に手動で貼り付けてください。');
         console.error('Import error:', err);
       }
     }
