@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', () => {
   // PWA (Service Worker) 登録処理
   if ('serviceWorker' in navigator) {
@@ -61,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function formatMemoText(text) {
     if (!text) return '';
     
-    // HTML特殊文字のエスケープ
     const escaped = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -69,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
 
-    // http(s):// または www. から始まるURLを自動検出してリンク化
     const fullUrlRegex = /(https?:\/\/[a-zA-Z0-9.\-_~:/?#[\]@!$&'()*+,;=%]+)/g;
     const wwwUrlRegex = /(^|[^\w/])(www\.[a-zA-Z0-9.\-_~:/?#[\]@!$&'()*+,;=%]+)/g;
 
@@ -88,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 食材行追加
   function addIngredientRow(name = '', amount = '') {
+    if (!ingredientsList) return;
     const div = document.createElement('div');
     div.className = 'dynamic-row ingredient-row';
     div.innerHTML = `
@@ -103,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 手順番号更新
   function updateStepNumbers() {
+    if (!stepsList) return;
     const stepRows = stepsList.querySelectorAll('.step-row');
     stepRows.forEach((row, index) => {
       const numSpan = row.querySelector('.step-number');
@@ -114,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 作り方行追加
   function addStepRow(value = '') {
+    if (!stepsList) return;
     const div = document.createElement('div');
     div.className = 'dynamic-row step-row';
     div.innerHTML = `
@@ -130,113 +130,125 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ボタンイベント登録
-  addIngredientBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    addIngredientRow();
-  });
+  if (addIngredientBtn) {
+    addIngredientBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      addIngredientRow();
+    });
+  }
 
-  addStepBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    addStepRow();
-  });
+  if (addStepBtn) {
+    addStepBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      addStepRow();
+    });
+  }
 
   // 画像ファイル読込
-  imageFileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        currentImageData = event.target.result;
-        imagePreview.src = currentImageData;
-        imagePreviewContainer.style.display = 'flex';
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-
-  removeImageBtn.addEventListener('click', () => {
-    currentImageData = '';
-    imageFileInput.value = '';
-    imagePreview.src = '';
-    imagePreviewContainer.style.display = 'none';
-  });
-
-  // レシピ保存処理
-  recipeForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const id = recipeIdInput.value || Date.now().toString();
-    const title = titleInput.value.trim();
-    const category = categoryInput.value;
-
-    const ingredientRows = ingredientsList.querySelectorAll('.ingredient-row');
-    const ingredients = [];
-    ingredientRows.forEach(row => {
-      const name = row.querySelector('.ingredient-name-input').value.trim();
-      const amount = row.querySelector('.ingredient-amount-input').value.trim();
-      if (name !== '' || amount !== '') {
-        ingredients.push({ name, amount });
+  if (imageFileInput) {
+    imageFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          currentImageData = event.target.result;
+          imagePreview.src = currentImageData;
+          imagePreviewContainer.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
       }
     });
+  }
 
-    const steps = Array.from(document.querySelectorAll('.step-input'))
-      .map(input => input.value.trim())
-      .filter(val => val !== '');
+  if (removeImageBtn) {
+    removeImageBtn.addEventListener('click', () => {
+      currentImageData = '';
+      if (imageFileInput) imageFileInput.value = '';
+      if (imagePreview) imagePreview.src = '';
+      if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
+    });
+  }
 
-    const memo = memoInput.value.trim();
+  // レシピ保存処理
+  if (recipeForm) {
+    recipeForm.addEventListener('submit', (e) => {
+      e.preventDefault();
 
-    const recipeData = {
-      id,
-      title,
-      category,
-      ingredients,
-      steps,
-      image: currentImageData,
-      memo
-    };
+      const id = recipeIdInput.value || Date.now().toString();
+      const title = titleInput.value.trim();
+      const category = categoryInput.value;
 
-    const existingIndex = recipes.findIndex(r => r.id === id);
-    if (existingIndex > -1) {
-      recipes[existingIndex] = recipeData;
-    } else {
-      recipes.push(recipeData);
-    }
+      const ingredientRows = ingredientsList.querySelectorAll('.ingredient-row');
+      const ingredients = [];
+      ingredientRows.forEach(row => {
+        const name = row.querySelector('.ingredient-name-input').value.trim();
+        const amount = row.querySelector('.ingredient-amount-input').value.trim();
+        if (name !== '' || amount !== '') {
+          ingredients.push({ name, amount });
+        }
+      });
 
-    try {
-      localStorage.setItem('recipes', JSON.stringify(recipes));
-    } catch (err) {
-      alert('画像サイズが大きすぎます。小さめの画像を選択してください。');
-      return;
-    }
+      const steps = Array.from(document.querySelectorAll('.step-input'))
+        .map(input => input.value.trim())
+        .filter(val => val !== '');
 
-    resetForm();
-    renderRecipes();
-  });
+      const memo = memoInput.value.trim();
+
+      const recipeData = {
+        id,
+        title,
+        category,
+        ingredients,
+        steps,
+        image: currentImageData,
+        memo
+      };
+
+      const existingIndex = recipes.findIndex(r => r.id === id);
+      if (existingIndex > -1) {
+        recipes[existingIndex] = recipeData;
+      } else {
+        recipes.push(recipeData);
+      }
+
+      try {
+        localStorage.setItem('recipes', JSON.stringify(recipes));
+      } catch (err) {
+        alert('画像サイズが大きすぎます。小さめの画像を選択してください。');
+        return;
+      }
+
+      resetForm();
+      renderRecipes();
+    });
+  }
 
   function resetForm() {
-    recipeIdInput.value = '';
-    titleInput.value = '';
-    categoryInput.value = '';
-    ingredientsList.innerHTML = '';
-    stepsList.innerHTML = '';
+    if (recipeIdInput) recipeIdInput.value = '';
+    if (titleInput) titleInput.value = '';
+    if (categoryInput) categoryInput.value = '主菜';
+    if (ingredientsList) ingredientsList.innerHTML = '';
+    if (stepsList) stepsList.innerHTML = '';
     currentImageData = '';
-    imageFileInput.value = '';
-    imagePreview.src = '';
-    imagePreviewContainer.style.display = 'none';
-    memoInput.value = '';
+    if (imageFileInput) imageFileInput.value = '';
+    if (imagePreview) imagePreview.src = '';
+    if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
+    if (memoInput) memoInput.value = '';
 
-    document.getElementById('form-title').textContent = '新規レシピ追加';
-    submitBtn.textContent = 'レシピを保存';
-    cancelBtn.style.display = 'none';
+    const formTitle = document.getElementById('form-title-text');
+    if (formTitle) formTitle.textContent = '新規レシピ追加';
+    if (submitBtn) submitBtn.textContent = 'レシピを保存';
+    if (cancelBtn) cancelBtn.style.display = 'none';
 
     addIngredientRow();
     addStepRow();
   }
 
-  cancelBtn.addEventListener('click', resetForm);
+  if (cancelBtn) cancelBtn.addEventListener('click', resetForm);
 
-  // 食材絞り込みタグの追加・描画
+  // 食材絞り込みタグ
   function addIngredientFilterTag() {
+    if (!ingredientSearchInput) return;
     const val = ingredientSearchInput.value.trim();
     if (val !== '') {
       if (!searchIngredientTags.includes(val)) {
@@ -249,6 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderIngredientTags() {
+    if (!ingredientTagsContainer) return;
     ingredientTagsContainer.innerHTML = '';
     searchIngredientTags.forEach(tag => {
       const tagEl = document.createElement('span');
@@ -266,27 +279,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  addIngredientFilterBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    addIngredientFilterTag();
-  });
-
-  ingredientSearchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+  if (addIngredientFilterBtn) {
+    addIngredientFilterBtn.addEventListener('click', (e) => {
       e.preventDefault();
       addIngredientFilterTag();
-    }
-  });
+    });
+  }
 
-  // 一覧描画 & 絞り込み実行
+  if (ingredientSearchInput) {
+    ingredientSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addIngredientFilterTag();
+      }
+    });
+  }
+
+  // 一覧描画
   function renderRecipes() {
+    if (!recipeListContainer) return;
     recipeListContainer.innerHTML = '';
 
-    const keyword = searchKeyword.value.toLowerCase();
-    const selectedCategory = filterCategory.value;
+    const keyword = searchKeyword ? searchKeyword.value.toLowerCase() : '';
+    const selectedCategory = filterCategory ? filterCategory.value : 'all';
 
     const filtered = recipes.filter(r => {
-      const matchesKeyword = r.title.toLowerCase().includes(keyword);
+      const matchesKeyword = r.title ? r.title.toLowerCase().includes(keyword) : false;
       const matchesCategory = selectedCategory === 'all' || r.category === selectedCategory;
 
       const matchesIngredients = searchIngredientTags.every(tag => {
@@ -306,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (filtered.length === 0) {
-      recipeListContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #777; padding: 20px;">条件に当てはまるレシピが見つかりません</p>';
+      recipeListContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #777; padding: 20px;">登録されたレシピはありません</p>';
       return;
     }
 
@@ -319,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.innerHTML = `
         <img src="${imgSrc}" class="card-img" alt="${recipe.title}">
         <div class="card-content">
-          <span class="badge">${recipe.category}</span>
+          <span class="badge">${recipe.category || '未設定'}</span>
           <div class="card-title">${recipe.title}</div>
           <div class="card-actions">
             <button type="button" class="btn-edit">編集</button>
@@ -353,14 +371,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 編集ロード
+  // 編集データのフォーム読み込み
   function loadRecipeToForm(recipe) {
-    recipeIdInput.value = recipe.id || '';
-    titleInput.value = recipe.title || '';
-    categoryInput.value = recipe.category || '主菜';
-    memoInput.value = recipe.memo || '';
+    if (recipeIdInput) recipeIdInput.value = recipe.id || '';
+    if (titleInput) titleInput.value = recipe.title || '';
+    if (categoryInput) categoryInput.value = recipe.category || '主菜';
+    if (memoInput) memoInput.value = recipe.memo || '';
 
-    ingredientsList.innerHTML = '';
+    if (ingredientsList) ingredientsList.innerHTML = '';
     if (recipe.ingredients && recipe.ingredients.length > 0) {
       recipe.ingredients.forEach(i => {
         if (typeof i === 'string') {
@@ -373,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
       addIngredientRow();
     }
 
-    stepsList.innerHTML = '';
+    if (stepsList) stepsList.innerHTML = '';
     if (recipe.steps && recipe.steps.length > 0) {
       recipe.steps.forEach(s => addStepRow(s));
     } else {
@@ -381,63 +399,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     currentImageData = recipe.image || '';
-    if (currentImageData) {
+    if (currentImageData && imagePreview && imagePreviewContainer) {
       imagePreview.src = currentImageData;
       imagePreviewContainer.style.display = 'flex';
-    } else {
-      imagePreview.src = '';
+    } else if (imagePreviewContainer) {
       imagePreviewContainer.style.display = 'none';
     }
 
-    document.getElementById('form-title').textContent = 'レシピを編集';
-    submitBtn.textContent = '変更を更新';
-    cancelBtn.style.display = 'inline-block';
+    const formTitle = document.getElementById('form-title-text');
+    if (formTitle) formTitle.textContent = 'レシピを編集';
+    if (submitBtn) submitBtn.textContent = '変更を更新';
+    if (cancelBtn) cancelBtn.style.display = 'inline-block';
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  searchKeyword.addEventListener('input', renderRecipes);
-  filterCategory.addEventListener('change', renderRecipes);
+  if (searchKeyword) searchKeyword.addEventListener('input', renderRecipes);
+  if (filterCategory) filterCategory.addEventListener('change', renderRecipes);
 
-  // モーダル表示制御
+  // モーダル処理
   function openModal(recipe) {
-    modalTitle.textContent = recipe.title;
-    modalCategory.textContent = recipe.category;
+    if (!recipeModal) return;
+    if (modalTitle) modalTitle.textContent = recipe.title;
+    if (modalCategory) modalCategory.textContent = recipe.category || '未設定';
 
-    if (recipe.image) {
+    if (recipe.image && modalImage) {
       modalImage.src = recipe.image;
       modalImage.style.display = 'block';
-    } else {
+    } else if (modalImage) {
       modalImage.removeAttribute('src');
       modalImage.style.display = 'none';
     }
 
-    modalIngredients.innerHTML = '';
-    if (recipe.ingredients && recipe.ingredients.length > 0) {
-      recipe.ingredients.forEach(ing => {
-        const li = document.createElement('li');
-        if (typeof ing === 'string') {
-          li.innerHTML = `<span class="ing-name">${ing}</span><span class="ing-amount"></span>`;
-        } else {
-          li.innerHTML = `
-            <span class="ing-name">${ing.name || ''}</span>
-            <span class="ing-amount">${ing.amount || ''}</span>
-          `;
-        }
-        modalIngredients.appendChild(li);
-      });
+    if (modalIngredients) {
+      modalIngredients.innerHTML = '';
+      if (recipe.ingredients && recipe.ingredients.length > 0) {
+        recipe.ingredients.forEach(ing => {
+          const li = document.createElement('li');
+          if (typeof ing === 'string') {
+            li.innerHTML = `<span class="ing-name">${ing}</span><span class="ing-amount"></span>`;
+          } else {
+            li.innerHTML = `
+              <span class="ing-name">${ing.name || ''}</span>
+              <span class="ing-amount">${ing.amount || ''}</span>
+            `;
+          }
+          modalIngredients.appendChild(li);
+        });
+      }
     }
 
-    modalSteps.innerHTML = '';
-    if (recipe.steps && recipe.steps.length > 0) {
-      recipe.steps.forEach(step => {
-        const li = document.createElement('li');
-        li.textContent = step;
-        modalSteps.appendChild(li);
-      });
+    if (modalSteps) {
+      modalSteps.innerHTML = '';
+      if (recipe.steps && recipe.steps.length > 0) {
+        recipe.steps.forEach(step => {
+          const li = document.createElement('li');
+          li.textContent = step;
+          modalSteps.appendChild(li);
+        });
+      }
     }
 
-    if (recipe.memo) {
+    if (recipe.memo && modalMemo && modalMemoContainer) {
       modalMemo.innerHTML = formatMemoText(recipe.memo);
       modalMemoContainer.style.display = 'block';
 
@@ -447,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
         link.addEventListener('click', stopProp);
         link.addEventListener('touchend', stopProp);
       });
-    } else {
+    } else if (modalMemoContainer) {
       modalMemoContainer.style.display = 'none';
     }
 
@@ -456,35 +479,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function closeModal() {
-    recipeModal.style.display = 'none';
+    if (recipeModal) recipeModal.style.display = 'none';
     document.body.style.overflow = 'auto';
   }
 
-  modalClose.addEventListener('click', closeModal);
+  if (modalClose) modalClose.addEventListener('click', closeModal);
+  if (recipeModal) {
+    recipeModal.addEventListener('click', (e) => {
+      if (e.target === recipeModal) closeModal();
+    });
+  }
 
-  recipeModal.addEventListener('click', (e) => {
-    if (e.target === recipeModal) {
-      closeModal();
-    }
-  });
-
-  resetForm();
-  renderRecipes();
-    // -------------------------------------------------------------
-  // クリップボードのURLからレシピ情報（タイトル・材料・画像）を取得・自動解析
+  // -------------------------------------------------------------
+  // クリップボードURLからの自動解析・取り込み機能
   // -------------------------------------------------------------
   async function importFromClipboardUrl() {
     try {
       const text = await navigator.clipboard.readText();
       if (!text || (!text.startsWith('http://') && !text.startsWith('https://'))) {
-        alert('クリップボードに有効なレシピURLが見つかりませんでした。URLをコピーしてからお試しください。');
+        alert('クリップボードにレシピページのURLが見つかりませんでした。WebサイトでURLをコピーしてから押してください。');
         return;
       }
 
       const targetUrl = text.trim();
       alert('URLを検出しました。レシピデータを読み込んでいます...');
 
-      // CORS回避用プロキシを介してHTMLを取得
       const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl);
       const res = await fetch(proxyUrl);
       const data = await res.json();
@@ -503,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
         url: targetUrl
       };
 
-      // 1. cotta.jp の解析
+      // 1. cotta.jp 解析
       if (targetUrl.includes('cotta.jp')) {
         importedData.title = doc.querySelector('.recipe_header_ttl, h1')?.innerText.trim() || doc.title;
         const img = doc.querySelector('.recipe_main_img img, .main_img img, #recipe_main_image img');
@@ -518,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
       
-      // 2. cookpad.com の解析
+      // 2. cookpad.com 解析
       if (importedData.ingredients.length === 0 && targetUrl.includes('cookpad.com')) {
         importedData.title = doc.querySelector('h1.recipe-title, h1')?.innerText.trim() || doc.title;
         const img = doc.querySelector('#main_photo img, .recipe-main-photo img');
@@ -561,36 +580,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!importedData.title) importedData.title = doc.title;
 
-      // フォームへ反映
+      // フォームへ読み込み（手順は空）
       loadRecipeToForm({
         title: importedData.title || '',
         category: '主菜',
         ingredients: importedData.ingredients || [],
-        steps: [], // 手順は取得しない
+        steps: [],
         image: '',
         memo: `参照元URL: ${targetUrl}`
       });
 
       if (importedData.imageUrl) {
         currentImageData = importedData.imageUrl;
-        imagePreview.src = importedData.imageUrl;
-        imagePreviewContainer.style.display = 'flex';
+        if (imagePreview) imagePreview.src = importedData.imageUrl;
+        if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
       }
 
-      alert('レシピ情報を自動取り込みしました！');
+      alert('タイトル、材料、画像を自動取り込みしました！確認して保存してください。');
     } catch (err) {
-      alert('読み込みに失敗しました。URLが正しいかご確認ください。');
+      alert('自動読み込みに失敗しました。URLが正しいかご確認ください。');
       console.error(err);
     }
   }
 
-  // 画面上に「URLから取り込む」ボタンを設置する処理
-  const formTitle = document.getElementById('form-title');
-  if (formTitle) {
+  // 「取り込む」ボタンをフォーム上部に設置
+  const formTitleEl = document.getElementById('form-title');
+  if (formTitleEl && !document.getElementById('clip-import-btn')) {
     const importBtn = document.createElement('button');
+    importBtn.id = 'clip-import-btn';
     importBtn.type = 'button';
-    importBtn.textContent = '📋 コピーしたURLから取り込む';
-    importBtn.style.cssText = 'margin-left: 10px; padding: 6px 12px; font-size: 12px; background: #ff9800; color: #fff; border: none; border-radius: 4px; cursor: pointer;';
+    importBtn.textContent = '📋 URLから自動取り込み';
+    importBtn.style.cssText = 'margin-left: 12px; padding: 6px 12px; font-size: 13px; background: #ff9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;';
     importBtn.addEventListener('click', importFromClipboardUrl);
-    formTitle.appendChild(importBtn);
+    formTitleEl.appendChild(importBtn);
   }
+
+  resetForm();
+  renderRecipes();
+});
