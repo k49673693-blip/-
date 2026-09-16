@@ -60,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function formatMemoText(text) {
     if (!text) return '';
     
-    // HTML特殊文字のエスケープ（XSS対策）
     const escaped = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -68,20 +67,15 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
 
-    // 1. http:// または https:// から始まるURLの検出（日本語・全角記号の手前までを抽出）
     const fullUrlRegex = /(https?:\/\/[a-zA-Z0-9.\-_~:/?#[\]@!$&'()*+,;=%]+)/g;
-    
-    // 2. www. から始まるURL（httpが付いていない場合）の検出
     const wwwUrlRegex = /(^|[^\w/])(www\.[a-zA-Z0-9.\-_~:/?#[\]@!$&'()*+,;=%]+)/g;
 
     let result = escaped;
 
-    // http(s):// 付きのURLをリンク化
     result = result.replace(fullUrlRegex, (url) => {
       return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="memo-link">${url}</a>`;
     });
 
-    // www. から始まるURL（httpなし）を http:// 付きのリンクに補正してリンク化
     result = result.replace(wwwUrlRegex, (match, prefix, url) => {
       return `${prefix}<a href="http://${url}" target="_blank" rel="noopener noreferrer" class="memo-link">${url}</a>`;
     });
@@ -358,9 +352,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 編集ロード
   function loadRecipeToForm(recipe) {
-    recipeIdInput.value = recipe.id;
-    titleInput.value = recipe.title;
-    categoryInput.value = recipe.category;
+    recipeIdInput.value = recipe.id || '';
+    titleInput.value = recipe.title || '';
+    categoryInput.value = recipe.category || '';
     memoInput.value = recipe.memo || '';
 
     ingredientsList.innerHTML = '';
@@ -440,12 +434,10 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // メモ欄の描画（URLの自動リンク化と改行適用）
     if (recipe.memo) {
       modalMemo.innerHTML = formatMemoText(recipe.memo);
       modalMemoContainer.style.display = 'block';
 
-      // スマホ・タブレットで確実にタップして移動できるよう、イベントバブリングを停止
       const links = modalMemo.querySelectorAll('.memo-link');
       links.forEach(link => {
         const stopProp = (e) => e.stopPropagation();
@@ -475,4 +467,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
   resetForm();
   renderRecipes();
+
+  // -------------------------------------------------------------
+  // 【追加】ブックマークレット等からの外部レシピ読み込み受け取り処理
+  // -------------------------------------------------------------
+  function checkExternalImport() {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#import=')) {
+      try {
+        const jsonString = decodeURIComponent(hash.substring(8));
+        const importedData = JSON.parse(jsonString);
+
+        if (importedData) {
+          loadRecipeToForm({
+            title: importedData.title || '',
+            category: '主菜',
+            ingredients: importedData.ingredients || [],
+            steps: importedData.steps || [],
+            image: importedData.image || '',
+            memo: importedData.url ? `引用元: ${importedData.url}` : ''
+          });
+
+          // ハッシュをクリアして画面上部にスクロール
+          history.replaceState(null, null, ' ');
+          alert('レシピ情報を読み込みました！確認して保存してください。');
+        }
+      } catch (err) {
+        console.error('Import error:', err);
+      }
+    }
+  }
+
+  checkExternalImport();
 });
