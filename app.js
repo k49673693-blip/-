@@ -471,49 +471,38 @@ document.addEventListener('DOMContentLoaded', () => {
   resetForm();
   renderRecipes();
 
-  // -------------------------------------------------------------
-  // 【更新】外部サイト（ブックマークレット）からの読み込み受け取り処理
+    // -------------------------------------------------------------
+  // 外部サイトから「タイトル・材料・画像・URL」を取り込む処理
   // -------------------------------------------------------------
   function checkExternalImport() {
     const hash = window.location.hash;
     if (hash && hash.startsWith('#import=')) {
       try {
         const rawData = decodeURIComponent(hash.substring(8));
-        
-        // 1. Android向け: 単一のURLが送られてきた場合
-        if (rawData.startsWith('http://') || rawData.startsWith('https://')) {
-          history.replaceState(null, null, ' '); // ハッシュをクリア
-          
-          loadRecipeToForm({
-            title: '',
-            category: '主菜',
-            ingredients: [],
-            steps: [],
-            memo: `参照元URL: ${rawData}`
-          });
-          alert('レシピページのURLをメモ欄に自動セットしました！タイトルや材料を入力して保存してください。');
-          return;
-        }
-
-        // 2. 従来互換: JSONデータ構造が送られてきた場合
         const importedData = JSON.parse(rawData);
+
         if (importedData) {
           loadRecipeToForm({
             title: importedData.title || '',
             category: '主菜',
             ingredients: importedData.ingredients || [],
-            steps: importedData.steps || [],
+            steps: [], // 手順は取り込まない
             image: importedData.image || '',
             memo: importedData.url ? `参照元URL: ${importedData.url}` : ''
           });
+
+          // 画像がURL形式で渡された場合プレビューを表示
+          if (importedData.image) {
+            currentImageData = importedData.image;
+            imagePreview.src = importedData.image;
+            imagePreviewContainer.style.display = 'flex';
+          }
+
           history.replaceState(null, null, ' ');
-          alert('レシピ情報を読み込みました！内容を確認して保存してください。');
+          alert('タイトル、材料、画像、参照URLを取り込みました！');
         }
       } catch (err) {
         console.error('Import error:', err);
       }
     }
   }
-
-  checkExternalImport();
-});
