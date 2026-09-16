@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', () => {
   // PWA (Service Worker) 登録処理
   if ('serviceWorker' in navigator) {
@@ -60,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function formatMemoText(text) {
     if (!text) return '';
     
+    // HTML特殊文字のエスケープ
     const escaped = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -67,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
 
+    // http(s):// または www. から始まるURLを自動検出してリンク化
     const fullUrlRegex = /(https?:\/\/[a-zA-Z0-9.\-_~:/?#[\]@!$&'()*+,;=%]+)/g;
     const wwwUrlRegex = /(^|[^\w/])(www\.[a-zA-Z0-9.\-_~:/?#[\]@!$&'()*+,;=%]+)/g;
 
@@ -354,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadRecipeToForm(recipe) {
     recipeIdInput.value = recipe.id || '';
     titleInput.value = recipe.title || '';
-    categoryInput.value = recipe.category || '';
+    categoryInput.value = recipe.category || '主菜';
     memoInput.value = recipe.memo || '';
 
     ingredientsList.innerHTML = '';
@@ -469,15 +472,31 @@ document.addEventListener('DOMContentLoaded', () => {
   renderRecipes();
 
   // -------------------------------------------------------------
-  // 【追加】ブックマークレット等からの外部レシピ読み込み受け取り処理
+  // 【更新】外部サイト（ブックマークレット）からの読み込み受け取り処理
   // -------------------------------------------------------------
   function checkExternalImport() {
     const hash = window.location.hash;
     if (hash && hash.startsWith('#import=')) {
       try {
-        const jsonString = decodeURIComponent(hash.substring(8));
-        const importedData = JSON.parse(jsonString);
+        const rawData = decodeURIComponent(hash.substring(8));
+        
+        // 1. Android向け: 単一のURLが送られてきた場合
+        if (rawData.startsWith('http://') || rawData.startsWith('https://')) {
+          history.replaceState(null, null, ' '); // ハッシュをクリア
+          
+          loadRecipeToForm({
+            title: '',
+            category: '主菜',
+            ingredients: [],
+            steps: [],
+            memo: `参照元URL: ${rawData}`
+          });
+          alert('レシピページのURLをメモ欄に自動セットしました！タイトルや材料を入力して保存してください。');
+          return;
+        }
 
+        // 2. 従来互換: JSONデータ構造が送られてきた場合
+        const importedData = JSON.parse(rawData);
         if (importedData) {
           loadRecipeToForm({
             title: importedData.title || '',
@@ -485,12 +504,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ingredients: importedData.ingredients || [],
             steps: importedData.steps || [],
             image: importedData.image || '',
-            memo: importedData.url ? `引用元: ${importedData.url}` : ''
+            memo: importedData.url ? `参照元URL: ${importedData.url}` : ''
           });
-
-          // ハッシュをクリアして画面上部にスクロール
           history.replaceState(null, null, ' ');
-          alert('レシピ情報を読み込みました！確認して保存してください。');
+          alert('レシピ情報を読み込みました！内容を確認して保存してください。');
         }
       } catch (err) {
         console.error('Import error:', err);
