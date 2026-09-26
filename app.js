@@ -623,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.style.overflow = 'auto';
   });
 
-  // -------------------------------------------------------------
+    // -------------------------------------------------------------
   // 外部(ブックマークレット)からのデータ受信用処理
   // -------------------------------------------------------------
   async function checkExternalImport() {
@@ -634,6 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const data = JSON.parse(decodeURIComponent(rawData));
         
+        // 1. フォームへデータを渡して初期化
         loadRecipeToForm({
           title: data.title || '',
           recipeYield: data.recipeYield || '',
@@ -644,8 +645,14 @@ document.addEventListener('DOMContentLoaded', () => {
           memo: data.url ? `参照元URL: ${data.url}` : ''
         });
 
+        // 2. 人数・分量の入力欄（recipeYield）にも明示的に値を反映
+        const recipeYieldInput = document.getElementById('recipeYield');
+        if (recipeYieldInput) {
+          recipeYieldInput.value = data.recipeYield || '';
+        }
+
+        // 3. 画像の自動圧縮とプレビュー表示
         if (data.imageUrl) {
-          // 取り込み画像の自動圧縮
           currentImageData = await compressImage(data.imageUrl);
           if (imagePreview) imagePreview.src = currentImageData;
           if (imagePreviewContainer) imagePreviewContainer.style.display = 'flex';
