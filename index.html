@@ -99,7 +99,7 @@
     </section>
   </div>
 
-  <!-- レシピ全画面表示モーダル -->
+<!-- レシピ全画面表示モーダル -->
   <div id="recipe-modal" class="fullscreen-modal">
     <div class="fullscreen-modal-content">
       <button class="fullscreen-close-btn" id="modal-close" type="button">&times; 閉じる</button>
@@ -112,7 +112,8 @@
       </div>
       <div class="fullscreen-body">
         <div class="fullscreen-section">
-          <h3>材料</h3>
+          <!-- 【変更】人数・分量(modal-yield)を表示するタグを追加 -->
+          <h3>材料 <span id="modal-yield" class="modal-yield-text"></span></h3>
           <ul id="modal-ingredients" class="modal-ingredients-list"></ul>
         </div>
         <div class="fullscreen-section">
@@ -126,6 +127,7 @@
       </div>
     </div>
   </div>
+
 
   <script src="app.js"></script>
 </body>
