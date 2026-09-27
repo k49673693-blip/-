@@ -565,12 +565,20 @@ document.addEventListener('DOMContentLoaded', () => {
   if (searchKeyword) searchKeyword.addEventListener('input', renderRecipes);
   if (filterCategory) filterCategory.addEventListener('change', renderRecipes);
 
-  // モーダル処理
+  const modalYield = document.getElementById('modal-yield');
+
   function openModal(recipe) {
     if (!recipeModal) return;
     if (modalTitle) modalTitle.textContent = recipe.title;
+
+    // カテゴリー（ジャンル）の表示
     if (modalCategory) {
-      modalCategory.textContent = recipe.recipeYield ? `${recipe.category || '未設定'} (${recipe.recipeYield})` : (recipe.category || '未設定');
+      modalCategory.textContent = recipe.category || '未設定';
+    }
+
+    // 【追加】「材料」の見出し横に人数・分量を表示（データがあればカッコ付きで表示）
+    if (modalYield) {
+      modalYield.textContent = recipe.recipeYield ? `(${recipe.recipeYield})` : '';
     }
 
     if (recipe.image && modalImage) {
@@ -622,6 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
     recipeModal.style.display = 'none';
     document.body.style.overflow = 'auto';
   });
+
 
     // -------------------------------------------------------------
   // 外部(ブックマークレット)からのデータ受信用処理
