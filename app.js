@@ -482,12 +482,16 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'recipe-card';
       const imgSrc = recipe.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect width="300" height="200" fill="%23eeeeee"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="20" fill="%23aaa">No Image</text></svg>';
 
-      const yieldBadge = recipe.recipeYield ? `<span class="badge" style="background:#8bc34a; margin-left:4px;">${recipe.recipeYield}</span>` : '';
+      // 人数・分量バッジの生成
+      const yieldBadge = recipe.recipeYield ? `<span class="badge badge-yield">${recipe.recipeYield}</span>` : '';
 
       card.innerHTML = `
         <img src="${imgSrc}" class="card-img" alt="${recipe.title}">
         <div class="card-content">
-          <span class="badge">${recipe.category || '未設定'}</span>${yieldBadge}
+          <div class="card-badges">
+            <span class="badge">${recipe.category || '未設定'}</span>
+            ${yieldBadge}
+          </div>
           <div class="card-title">${recipe.title}</div>
           <div class="card-actions">
             <button type="button" class="btn-edit">編集</button>
@@ -518,7 +522,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       recipeListContainer.appendChild(card);
     });
-            }
+  }
+
 
 // フォーム読み込み
   function loadRecipeToForm(recipe) {
