@@ -225,6 +225,13 @@ button[type="submit"] {
   flex-grow: 1;
 }
 
+.card-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
 .badge {
   display: inline-block;
   background: #e0f2fe;
@@ -232,8 +239,13 @@ button[type="submit"] {
   font-size: 0.75rem;
   padding: 2px 8px;
   border-radius: 12px;
-  margin-bottom: 6px;
   width: fit-content;
+}
+
+/* 人数表示用バッジ */
+.badge-yield {
+  background: #f1f5f9;
+  color: #475569;
 }
 
 .card-title {
@@ -338,6 +350,16 @@ button[type="submit"] {
   padding-left: 10px;
   margin-bottom: 15px;
   font-size: 1.3rem;
+  display: flex;
+  align-items: baseline;
+}
+
+/* モーダル内の人数・分量テキスト */
+.modal-yield-text {
+  font-size: 0.9rem;
+  font-weight: normal;
+  color: #64748b;
+  margin-left: 10px;
 }
 
 .modal-ingredients-list {
